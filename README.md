@@ -7,6 +7,7 @@
 | 手册 | 内容 |
 | --- | --- |
 | [Harness Agent 全景手册](harness-agent/index.html) | 从零理解智能体运行时，覆盖 Agent Loop、工具系统、上下文管理、权限与安全、子智能体和扩展生态，并对照 ZCode 与 Deepseek-Harness 源码走读。 |
+| [Godot 游戏开发入门指南](godot-game-dev/index.html) | 面向零基础读者的 Godot 入门教程：从引擎安装与核心概念讲起，手把手完成第一个完整小游戏《接金币》，涵盖手感打磨、数值设计、素材资源与打包发布。 |
 
 ## 如何阅读
 

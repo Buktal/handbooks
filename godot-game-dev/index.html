@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Godot 游戏开发入门指南 · 从零基础到发布第一个完整游戏</title>
+<meta name="description" content="一份面向零基础读者的 Godot 游戏开发入门教程：从引擎安装与核心概念讲起，手把手完成第一个完整小游戏《接金币》，涵盖手感打磨、数值设计、素材资源与打包发布的完整流程。">
+<meta name="theme-color" content="#F4F5F8" id="themeColorMeta">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Godot 游戏开发入门指南">
+<meta property="og:description" content="面向零基础读者的系统入门教程：从引擎安装到亲手完成第一个完整小游戏，涵盖核心概念、实战、手感、数值、素材与发布。">
+<script>/* 预置主题，避免刷新时闪烁；支持 ?theme=dark|light 覆盖 */(function(){try{var q=new RegExp('[?&]theme=(dark|light)').exec(location.search);var t=q?q[1]:(localStorage.getItem('gd-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));document.documentElement.dataset.theme=t;}catch(e){}})();</script>
+<style>
+  :root{
+    --bg:#F4F5F8; --panel:#FFFFFF; --ink:#1B2430; --sub:#5A6472; --line:#E2E5EA;
+    --gold:#C8860A; --gold-ink:#8A5B06; --gold-soft:#FBF3E2; --blue:#2B5CAD;
+    --code-bg:#14181F; --code-ink:#DCE3ED; --warn:#B3541E;
+    --shadow:0 1px 3px rgba(27,36,48,.06);
+    color-scheme:light;
+  }
+  html[data-theme="dark"]{
+    --bg:#10141B; --panel:#171C26; --ink:#E8EAF0; --sub:#97A0AE; --line:#262D3A;
+    --gold:#F2B830; --gold-ink:#F2B830; --gold-soft:#2A2413; --blue:#8FB4E8;
+    --code-bg:#0D1117; --code-ink:#D8E1EE; --warn:#E8925F;
+    --shadow:0 1px 3px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.75;font-size:15.5px}
+  code,pre,.toc{font-family:ui-monospace,"Cascadia Code",Consolas,"JetBrains Mono",monospace}
+  a{color:var(--blue)}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:2px}
+  ::selection{background:rgba(200,134,10,.32);background:color-mix(in srgb,var(--gold) 32%,transparent)}
+  p,li,td{overflow-wrap:break-word}
+
+  /* 阅读进度条 */
+  #xp{position:fixed;top:0;left:0;height:3px;width:0;background:var(--gold);z-index:99;transition:width .15s linear}
+
+  /* 顶栏 */
+  .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:12px;padding:10px 22px;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .topbar .mini-coin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFE9A8 0%,#F2B830 55%,#8A5B06 100%);flex:none}
+  .topbar b{font-size:14.5px;font-weight:700}
+  .topbar a.brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}
+  .topbar .spacer{flex:1}
+  .theme-btn{font-size:12.5px;padding:5px 14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:99px;cursor:pointer}
+  .theme-btn:hover{border-color:var(--gold)}
+
+  /* 布局 */
+  .layout{display:grid;grid-template-columns:240px minmax(0,860px);gap:44px;max-width:1200px;margin:0 auto;padding:34px 24px 90px}
+  @media(max-width:920px){
+    .layout{grid-template-columns:1fr;gap:0}
+    aside.toc{position:static;border:0;background:none;padding:0;margin-bottom:26px}
+    aside.toc details{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:10px 14px}
+  }
+  @media(min-width:921px){aside.toc>details[open]{all:unset}}
+
+  /* 目录 */
+  aside.toc{position:sticky;top:64px;align-self:start;max-height:calc(100vh - 84px);overflow:auto}
+  aside.toc summary{font-size:12px;color:var(--sub);cursor:pointer;letter-spacing:.08em}
+  aside.toc nav{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+  aside.toc nav a{display:block;padding:4px 10px;font-size:12.5px;color:var(--sub);text-decoration:none;border-left:2px solid transparent;border-radius:0 6px 6px 0}
+  aside.toc nav a:hover{color:var(--ink);background:var(--panel)}
+  aside.toc nav a.on{color:var(--gold-ink);border-left-color:var(--gold);background:var(--gold-soft);font-weight:600}
+
+  /* 章节 */
+  section{margin:0 0 58px;scroll-margin-top:76px}
+  h2{font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
+  h2 .no{font-size:12px;color:var(--gold-ink);background:var(--gold-soft);border:1px solid var(--gold);padding:2px 10px;border-radius:99px;vertical-align:middle;margin-left:10px;white-space:nowrap;font-family:ui-monospace,Consolas,monospace}
+  h3{font-size:17.5px;margin:30px 0 8px}
+  h4{font-size:15px;margin:22px 0 6px}
+  p{margin:8px 0}
+  .lede{color:var(--sub);font-size:14px;margin:0 0 22px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  ul,ol{padding-left:24px}
+  li{margin:5px 0}
+  strong{font-weight:700}
+
+  /* 表格 */
+  table{width:100%;border-collapse:collapse;background:var(--panel);font-size:13.5px;margin:14px 0;box-shadow:var(--shadow)}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel);background:color-mix(in srgb,var(--panel) 60%,var(--bg));font-weight:600;white-space:nowrap}
+  td:first-child{white-space:nowrap;font-weight:600}
+  @media(max-width:560px){
+    th,td{padding:6px 8px}
+    td:first-child{white-space:normal}
+    table{font-size:12.5px}
+  }
+
+  /* 卡片与提示 */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:16px 0;box-shadow:var(--shadow)}
+  .note{border-left:3px solid var(--blue);background:var(--panel);background:color-mix(in srgb,var(--blue) 7%,var(--panel));padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14px}
+  .warn{border-left:3px solid var(--warn);background:var(--panel);background:color-mix(in srgb,var(--warn) 8%,var(--panel));padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0;font-size:14px}
+  .achieve{border:1px dashed var(--gold);background:var(--gold-soft);padding:10px 14px;border-radius:8px;margin:14px 0;font-size:13.5px;color:var(--gold-ink)}
+  .achieve::before{content:"检查点 · ";font-weight:700}
+
+  /* 代码 */
+  pre{position:relative;background:var(--code-bg);color:var(--code-ink);padding:15px 17px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.6;margin:12px 0}
+  .copy-btn{position:absolute;top:8px;right:8px;font-size:11px;line-height:1.5;padding:3px 10px;border:1px solid #3A4453;background:#1B2230;color:#9FB0C5;border-radius:6px;cursor:pointer;opacity:0;transition:opacity .15s;font-family:inherit}
+  pre:hover .copy-btn,pre:focus-within .copy-btn{opacity:1}
+  .copy-btn:hover{color:#FFFFFF;border-color:#F2B830}
+  @media(hover:none){.copy-btn{opacity:1}}
+  @media(prefers-reduced-motion:reduce){.copy-btn{transition:none}}
+  pre .c{color:#8A98A8}
+  pre .s{color:#A8D08D}
+  pre .k{color:#F2B830}
+  pre .n{color:#E8A3A3}
+  :not(pre)>code{background:rgba(128,136,148,.16);background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1px 6px;border-radius:5px;font-size:13.5px}
+  .ascii{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;font-size:12px;line-height:1.5;overflow-x:auto;color:var(--sub)}
+
+  /* 首屏 */
+  .hero{padding:56px 0 10px}
+  .hero .coin-wrap{height:110px;position:relative;margin-bottom:18px}
+  .coin{position:absolute;left:0;top:24px;width:6px;height:6px;animation:bob 3.2s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @media(prefers-reduced-motion:reduce){.coin{animation:none}}
+  .hero h1{font-size:clamp(30px,5.4vw,44px);line-height:1.2;margin:0 0 12px;letter-spacing:-.015em}
+  .hero .sub{font-size:16.5px;color:var(--sub);max-width:640px;margin:0 0 26px}
+  .hero .facts{display:flex;flex-wrap:wrap;gap:10px}
+  .hero .facts span{font-size:12.5px;padding:5px 13px;border:1px solid var(--line);border-radius:99px;background:var(--panel);color:var(--sub)}
+
+  /* 流程阶段 */
+  .stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:18px 0}
+  .stages .st{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px}
+  .stages .st b{display:block;font-size:13.5px}
+  .stages .st em{font-style:normal;color:var(--sub);font-size:12px}
+  .stages .st .n{color:var(--gold-ink);font-weight:700;font-size:11px;font-family:ui-monospace,Consolas,monospace}
+
+  /* 学习清单 */
+  .quest{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 24px;box-shadow:var(--shadow)}
+  .quest .qhead{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
+  .quest .qhead b{font-size:16px}
+  .quest .qcount{font-size:12px;color:var(--gold-ink)}
+  .quest label{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;border-bottom:1px dashed var(--line);cursor:pointer;font-size:14px}
+  .quest label:last-of-type{border-bottom:0}
+  .quest input{accent-color:var(--gold);margin-top:5px}
+  .quest input:checked+span{color:var(--sub);text-decoration:line-through}
+
+  footer{border-top:1px solid var(--line);color:var(--sub);font-size:12.5px;padding-top:16px;margin-top:20px}
+
+  /* 打印样式：隐藏交互部件，以浅色输出 */
+  @media print{
+    html[data-theme="dark"]{--bg:#fff;--panel:#fff;--ink:#1B2430;--sub:#5A6472;--line:#C8CDD4;--gold:#C8860A;--gold-ink:#8A5B06;--gold-soft:#FBF3E2;--blue:#2B5CAD;--code-bg:#F3F4F6;--code-ink:#1B2430;--warn:#B3541E;--shadow:none}
+    .topbar,#xp,aside.toc,.copy-btn{display:none!important}
+    .layout{display:block;max-width:none;padding:0}
+    body{background:#fff}
+    h2,h3,h4{break-after:avoid}
+    pre,table,.card,.achieve,.note,.warn,.stages .st,.quest label{break-inside:avoid}
+    pre .c{color:#6A7887}pre .s{color:#4A7A3A}pre .k{color:#9A6D00}pre .n{color:#B05252}
+    a{color:#2B5CAD}
+    a[href^="http"]::after{content:"（" attr(href) "）";font-size:11px;color:#5A6472;word-break:break-all}
+  }
+</style>
+</head>
+<body>
+
+<div id="xp" role="progressbar" aria-label="阅读进度"></div>
+
+<header class="topbar">
+  <a href="#top" class="brand"><span class="mini-coin" aria-hidden="true"></span><b>Godot 游戏开发入门指南</b></a>
+  <span class="spacer"></span>
+  <button class="theme-btn" id="themeBtn" type="button">切换至深色模式</button>
+</header>
+
+<div class="layout">
+
+<aside class="toc">
+  <details open>
+    <summary>目录</summary>
+    <nav id="toc">
+      <a href="#engines">1 游戏引擎概览</a>
+      <a href="#install">2 获取与安装 Godot</a>
+      <a href="#editor">3 熟悉编辑器</a>
+      <a href="#concepts">4 四个核心概念</a>
+      <a href="#helloworld">5 实战起步：可控制的角色</a>
+      <a href="#gamebuild">6 实战进阶：完成《接金币》</a>
+      <a href="#juice">7 游戏手感</a>
+      <a href="#numbers">8 数值设计基础</a>
+      <a href="#assets">9 素材与音频资源</a>
+      <a href="#roadmap">10 从原型到完整游戏</a>
+      <a href="#export">11 打包与发布</a>
+      <a href="#glossary">12 术语表</a>
+      <a href="#faq">13 常见问题</a>
+      <a href="#quest">14 学习进度清单</a>
+    </nav>
+  </details>
+</aside>
+
+<main>
+
+  <!-- 首屏 -->
+  <section class="hero" id="top">
+    <div class="coin-wrap"><div class="coin" id="pixelCoin" aria-hidden="true"></div></div>
+    <h1>Godot 游戏开发入门指南</h1>
+    <p class="sub">面向零基础读者的系统入门教程：从「游戏引擎是什么」讲起，到亲手完成一个具备完整玩法的小游戏——可玩、有计分、有胜负、有音效，并打包分发给其他人。不需要游戏开发经验，也不需要美术基础。</p>
+    <div class="facts">
+      <span>引擎完全免费且开源</span>
+      <span>跟随教程约需 3–4 小时</span>
+      <span>实战项目：《接金币》</span>
+      <span>支持导出 Windows / Android</span>
+    </div>
+  </section>
+
+  <!-- 1 -->
+  <section id="engines">
+    <h2>游戏引擎概览<span class="no">第 1 章</span></h2>
+    <p class="lede">游戏引擎是负责渲染、音频、物理、输入等基础功能的软件框架，开发者只需专注实现游戏规则本身。目前主流的几款引擎如下：</p>
+    <table>
+      <tr><th scope="col">引擎</th><th>特点</th><th>适用场景</th></tr>
+      <tr><td>Unity</td><td>生态规模最大，使用 C# 开发，行业招聘的主流选择</td><td>3D 项目、以就业为目标的学习者</td></tr>
+      <tr><td>Godot</td><td>免费开源，体积约 100 MB，对新手友好，2D 能力出色</td><td>个人开发者、2D 项目、零成本起步</td></tr>
+      <tr><td>虚幻 5（Unreal）</td><td>3A 级画面表现，使用 C++ 或蓝图可视化编程，硬件要求较高</td><td>追求顶级画面表现的项目</td></tr>
+      <tr><td>Cocos</td><td>国内微信、抖音小游戏生态的主流引擎</td><td>目标明确面向手机小游戏平台</td></tr>
+    </table>
+    <div class="note"><strong>本指南自本章之后的所有内容，均以 Godot 为基础展开。</strong>对零基础读者而言，选择 Godot 的理由非常实际：完全免费且无隐性收费、软件轻量、自带脚本语言的语法接近 Python、2D 教学与免费素材生态完善。其他引擎各有优势，但在「第一次做游戏」这件事上，Godot 的综合门槛最低。</div>
+  </section>
+
+  <!-- 2 -->
+  <section id="install">
+    <h2>获取与安装 Godot<span class="no">第 2 章</span></h2>
+    <p class="lede">下载页提供多个版本，选择正确的版本可以避免后续的一系列问题。</p>
+    <h3>2.1 下载步骤</h3>
+    <ol>
+      <li>访问官方网站 <code>godotengine.org</code>，进入 Download 页面，选择 Windows 平台。</li>
+      <li>下载<strong>标准版（Standard）</strong>，即约 100 MB 的 zip 压缩包。</li>
+      <li>将压缩包解压至任意目录（例如 <code>D:\Godot</code>），其中只包含一个 exe 文件。</li>
+      <li>双击运行。Godot 为绿色软件，<strong>无需安装</strong>。</li>
+    </ol>
+    <table>
+      <tr><th scope="col">下载页版本</th><th>说明</th><th>是否需要</th></tr>
+      <tr><td>标准版</td><td>使用官方脚本语言 GDScript</td><td>是，本指南基于此版本</td></tr>
+      <tr><td>.NET 版</td><td>支持 C# 语言，需额外安装 .NET 运行环境</td><td>否，初学阶段用不到</td></tr>
+      <tr><td>GitHub 源码</td><td>引擎本体的 C++ 源代码，供修改引擎的开发者使用</td><td>否，制作游戏无需接触</td></tr>
+    </table>
+    <div class="achieve">双击 exe 后应看到深色的「项目管理器」窗口，中央有「新建」按钮。达到此效果即表示安装完成。</div>
+  </section>
+
+  <!-- 3 -->
+  <section id="editor">
+    <h2>熟悉编辑器<span class="no">第 3 章</span></h2>
+    <p class="lede">进入编辑器主界面后，先整体了解五个功能区域的分工。如果尚未创建项目：点击项目管理器右上角的「+ 新建」，项目名称随意（例如 <code>test</code>），一路默认确认即可进入；正式项目会在第 5 章创建。</p>
+    <pre class="ascii">┌────────────────┬──────────────────┬────────────────┐
+│ 左上：场景面板   │   中间：2D 视口    │ 右上：文件面板    │
+│ 节点树结构       │   游戏画面编辑区    │ 项目的全部文件   │
+├────────────────┤                  ├────────────────┤
+│ 左下：检查器     │                  │（检查器延续）     │
+│ 选中节点的属性    │                  │                 │
+├────────────────┴──────────────────┴────────────────┤
+│ 底部：输出面板（错误信息与调试打印显示在这里）           │
+└─────────────────────────────────────────────────────┘</pre>
+    <p><strong>核心操作逻辑：在左侧选择节点，在右侧修改属性，在中间查看效果，按 F5 运行游戏。</strong></p>
+    <table>
+      <tr><th scope="col">按键</th><th>作用</th></tr>
+      <tr><td>F5</td><td>运行整个项目</td></tr>
+      <tr><td>F6</td><td>仅运行当前场景，用于快速预览</td></tr>
+      <tr><td>F1</td><td>打开内置 API 文档，编写代码时可随时查询</td></tr>
+      <tr><td>Ctrl+S</td><td>保存。Godot 不会自动保存，每次修改后都应手动保存——这是新手最常遇到的问题之一</td></tr>
+    </table>
+  </section>
+
+  <!-- 4 -->
+  <section id="concepts">
+    <h2>四个核心概念<span class="no">第 4 章</span></h2>
+    <p class="lede">Godot 的一切都建立在这四个概念之上。先用直观比喻建立理解，编写代码时自然会逐渐熟悉。</p>
+    <div class="card">
+      <h3 style="margin-top:0">节点（Node）——最小的功能单元</h3>
+      <p>一个完成特定工作的组件：一张图片（Sprite2D）、一段音频（AudioStreamPlayer）、一个计时器（Timer）。节点本身知道如何完成自己的工作，开发者负责安排它们的位置与连接方式。</p>
+      <h3>场景（Scene）——节点的组合</h3>
+      <p>将若干节点组装为一个有意义的整体（例如「一个敌人」= 图形 + 碰撞判定 + 行为脚本），保存为 <code>.tscn</code> 文件。场景可以无限复用：制作一个敌人场景后，即可生成任意数量相同的敌人。这是 Godot 组织项目的基本方式。</p>
+      <h3>信号（Signal）——节点间的通知机制</h3>
+      <p>当特定事件发生时（计时器到点、两个对象重叠、按钮被点击），节点会发出信号，所有监听该信号的代码将被自动执行。游戏中所有「A 发生了，因此 B 需要响应」的逻辑都由信号完成，节点之间无需相互引用。</p>
+      <h3>脚本（Script）——行为的定义</h3>
+      <p>用 GDScript 编写的、描述「该节点如何表现」的代码。GDScript 语法与 Python 非常接近，可读性强，是适合初学者的游戏脚本语言。</p>
+    </div>
+    <details class="card">
+      <summary><strong>附：有编程基础读者的概念对照（选读）</strong></summary>
+      <table>
+        <tr><th scope="col">已有概念</th><th>Godot 中的对应</th></tr>
+        <tr><td>DOM / 组件树</td><td>场景树（Scene Tree），一切皆节点</td></tr>
+        <tr><td>可复用组件</td><td>场景（.tscn），可嵌套、可实例化</td></tr>
+        <tr><td>事件监听（addEventListener）</td><td>信号连接（connect），内置观察者模式</td></tr>
+        <tr><td>Python</td><td>GDScript（语法基本一致）</td></tr>
+        <tr><td>全局单例服务</td><td>Autoload</td></tr>
+        <tr><td>每帧回调</td><td><code>_process(delta)</code>，delta 为该帧耗时的秒数，位移计算应乘以它</td></tr>
+        <tr><td>组件挂载完成时</td><td><code>_ready()</code></td></tr>
+      </table>
+      <p style="font-size:13.5px;color:var(--sub)">最主要的思维转变：游戏不是「请求—响应」模型，而是一个每秒运行约 60 帧、所有对象常驻内存并持续相互影响的运行环境。每一帧的时间预算约为 16.6 毫秒。</p>
+    </details>
+  </section>
+
+  <!-- 5 -->
+  <section id="helloworld">
+    <h2>实战起步：可控制的角色<span class="no">第 5 章</span></h2>
+    <p class="lede">本章目标：创建项目，实现一个可以用方向键左右移动的角色。这个最小的例子将完整走通「输入 → 更新 → 渲染」的游戏主循环。</p>
+
+    <h3>5.1 新建项目与第一个场景</h3>
+    <ol>
+      <li>在项目管理器中点击「+ 新建」，项目名称填写 <code>catch_coin</code>，点击创建并编辑。</li>
+      <li>左侧场景面板中点击「<strong>2D 场景</strong>」按钮，生成一个 Node2D 根节点（2D 世界的容器）。</li>
+      <li>按 Ctrl+S 保存，场景命名为 <code>main.tscn</code>。</li>
+    </ol>
+    <div class="achieve">右上角文件面板中出现 <code>res://main.tscn</code>（<code>res://</code> 即项目根目录），即表示本节完成。</div>
+
+    <h3>5.2 创建角色并编写第一段代码</h3>
+    <ol>
+      <li>点击场景面板左上角的「＋」按钮，搜索 <code>Sprite2D</code> 并添加。中间视口会出现一个白色方框，即角色的初始形态。</li>
+      <li>在视口中<strong>把白色方框拖到画面下方居中</strong>（新节点默认停在左上角原点）。第 6 章它会作为接取金币的「篮子」使用，位置从现在起就应摆放正确。</li>
+      <li>右键点击 Sprite2D，选择「附加脚本」，保持默认设置，点击创建。</li>
+      <li>将以下代码<strong>完整复制</strong>到脚本编辑器中（覆盖原有内容）：</li>
+    </ol>
+<pre><code class="gd">extends Sprite2D
+# extends 表示继承：本脚本挂载在 Sprite2D 节点上，为其定义行为。
+
+# 引擎每帧调用一次，delta 为距上一帧经过的秒数
+func _process(delta: float) -&gt; void:
+	# 读取输入：左右方向键，返回 -1 / 0 / 1
+	var dir := Input.get_axis("move_left", "move_right")
+	# 速度为每秒 300 像素。乘以 delta 保证在不同帧率下速度一致
+	position.x += dir * 300.0 * delta
+	# 限制在屏幕范围内（Godot 4 默认窗口宽度即 1152 像素，无需修改）
+	position.x = clamp(position.x, 50, 1102)</code></pre>
+    <ol start="4">
+      <li>还需要定义 <code>move_left</code> 与 <code>move_right</code> 这两个动作。注意：<strong>Godot 4 默认的输入映射里没有这两个动作</strong>（内置的 <code>ui_left</code> 等属于界面导航，不建议直接使用），需要手动添加：打开右上角「项目设置」→ 顶部「输入映射」标签 → 在「添加新动作」输入框中填写 <code>move_left</code> 并按回车 → 在列表中找到它，点击右侧「+」按钮 → 按下键盘左方向键 → 确认。再按同样步骤添加 <code>move_right</code> 并绑定右方向键。完成后关闭设置窗口。</li>
+      <li>保存场景与脚本（Ctrl+S），按 <strong>F6</strong> 运行当前场景。</li>
+    </ol>
+    <div class="achieve">运行后应看到：弹出游戏窗口，白色方框随左右方向键平滑移动，且不会移出屏幕。至此已完成游戏开发中第一个重要里程碑——主循环已经亲手实现，后续所有内容都是这一循环的扩展。</div>
+
+    <h3>5.3 常见问题排查</h3>
+    <table>
+      <tr><th scope="col">症状</th><th>原因</th><th>解决方法</th></tr>
+      <tr><td>白色方框不移动</td><td>动作名称未配置或拼写不一致</td><td>检查输入映射中的名称与代码是否完全一致</td></tr>
+      <tr><td>报错「无效的动作名」</td><td>未在输入映射中定义该动作</td><td>返回上一步完成配置</td></tr>
+      <tr><td>窗口一闪而过</td><td>脚本存在语法错误</td><td>查看底部输出面板中的红色错误信息及行号。GDScript 对缩进敏感，全篇必须统一使用 Tab</td></tr>
+      <tr><td>移动速度时快时慢</td><td>位移未乘以 delta</td><td>检查代码中的 <code>* delta</code></td></tr>
+    </table>
+
+    <h3>5.4 为角色指定图片素材</h3>
+    <ol>
+      <li>访问免费素材站点 <code>kenney.nl/assets</code>（详见第 9 章），下载任意素材包并解压。</li>
+      <li>将 png 图片<strong>直接拖入</strong> Godot 右上角的文件面板（建议放入 assets 文件夹）。</li>
+      <li>选中角色的 Sprite2D 节点，在右侧检查器中找到 Texture 属性，将图片从文件面板<strong>拖入该属性槽</strong>。</li>
+      <li>图片过大时，在检查器 Transform → Scale 中改为 0.5, 0.5（等比缩小一半）。</li>
+    </ol>
+    <div class="achieve">角色显示为一张图片，且仍然可以用方向键控制移动，即表示本节完成。</div>
+  </section>
+
+  <!-- 6 -->
+  <section id="gamebuild">
+    <h2>实战进阶：完成《接金币》<span class="no">第 6 章</span></h2>
+    <p class="lede">游戏规则：玩家控制一个篮子左右移动，屏幕上方不断落下金币与炸弹；接到金币得 1 分，碰到炸弹失去 1 条生命，3 条生命耗尽后游戏结束，按 R 键重新开始。本章结束后，你将得到一个完整可玩的游戏。</p>
+    <p>本章施工顺序：先做出金币与炸弹的可复用场景（6.1），再让它们持续生成（6.2），然后实现接取判定与计分（6.3），接着完成界面显示与重开闭环（6.4），最后添加音效（6.5）。每一节都可以运行验证，再进入下一节。</p>
+
+    <h3>6.1 制作金币与炸弹——第一个可复用场景</h3>
+    <ol>
+      <li>点击场景面板顶部的「＋」新建场景。这次不选「2D 场景」（那样根节点是 Node2D），而是点击「<strong>其他（Other）</strong>」，在列表中选择 <code>Area2D</code> 作为根节点——因为金币本身就需要接触判定，直接让它做根。将根节点重命名为 <code>Coin</code>。</li>
+      <li>为根节点添加 Sprite2D 子节点，并指定金币图片。若素材包中没有金币、炸弹这类图案，用两张<strong>不同的图片</strong>区分即可（例如星星与方块）——本教程教的是机制，图片本身不影响学习。</li>
+      <li>再为根节点添加 <code>CollisionShape2D</code> 子节点（判定范围），在检查器的 Shape 属性中新建 RectangleShape2D，并在视口中拖出一个覆盖金币的矩形。<strong>若节点顶部出现黄色感叹号，表示未设置 Shape，必须完成设置。</strong></li>
+      <li>为根节点附加脚本：</li>
+    </ol>
+<pre><code class="gd">extends Area2D
+
+func _ready() -&gt; void:
+	# 出生时随机确定下落速度（每秒 150~250 像素），保存在节点上
+	set_meta("speed", randf_range(150.0, 250.0))
+	set_process(false)  # 暂停更新，等待主场景通知开始
+
+func start_falling() -&gt; void:
+	set_process(true)
+
+func _process(delta: float) -&gt; void:
+	position.y += get_meta("speed") * delta
+	# 落出屏幕底部后自我删除，防止对象持续累积
+	if position.y &gt; 700:
+		queue_free()</code></pre>
+    <ol start="6">
+      <li>按 Ctrl+S 保存为 <code>coin.tscn</code>。</li>
+      <li><strong>按完全相同的步骤</strong>制作 <code>bomb.tscn</code>，将图片替换为炸弹素材。</li>
+      <li>为两者添加分组标识：选中场景根节点，点击检查器上方的「分组」按钮，金币场景添加组 <code>coin</code>，炸弹场景添加组 <code>bomb</code>。后续代码通过分组区分接触的对象。</li>
+    </ol>
+
+    <h3>6.2 实现生成器——让掉落物持续出现</h3>
+    <p>切换回 main.tscn（通过场景面板顶部的标签页），为根节点 Node2D 附加脚本（本节先实现生成逻辑；6.4 将给出整合界面与游戏结束逻辑后的完整最终版，届时整体替换）：</p>
+<pre><code class="gd">extends Node2D
+
+# preload 提前将场景文件加载进来（类似 import）
+var coin_scene := preload("res://coin.tscn")
+var bomb_scene := preload("res://bomb.tscn")
+
+func _ready() -&gt; void:
+	# 创建一个计时器：每 0.8 秒触发一次生成
+	var timer := Timer.new()
+	timer.wait_time = 0.8
+	timer.timeout.connect(_on_spawn)  # 到点发出信号，调用 _on_spawn
+	add_child(timer)
+	timer.start()
+
+func _on_spawn() -&gt; void:
+	# 80% 概率生成金币，20% 概率生成炸弹
+	var scene := coin_scene if randf() &lt; 0.8 else bomb_scene
+	var item := scene.instantiate()  # 从模板生成一个实例
+	item.position = Vector2(randf_range(60.0, 1090.0), -30)  # 屏幕上方的随机位置
+	add_child(item)  # 加入场景树后，它自动开始执行自己的下落逻辑
+	item.start_falling()</code></pre>
+    <div class="achieve">按 F6 运行后应看到：金币与炸弹持续从屏幕上方生成并下落，落出屏幕后自行销毁，运行流畅。这里用到了两个核心模式：场景实例化（一个模板生成任意数量的实例）与信号连接（计时器到点触发函数）。</div>
+
+    <h3>6.3 接触判定与计分</h3>
+    <ol>
+      <li>升级篮子结构：在 main.tscn 中新建一个 Area2D 节点，将现有的 Sprite2D <strong>拖入其下</strong>作为子节点。<strong>注意：此时篮子可能会跳向画面左上角</strong>——因为新的 Area2D 位于坐标原点，在视口中把 Area2D 整体拖回篮子原本的位置（画面下方居中）即可。</li>
+      <li>转移脚本（四步）：打开现有脚本，全选复制代码；右键 Sprite2D → 选择「从脚本分离」（Detach Script，不同版本可能显示为移除脚本）；右键 Area2D →「附加脚本」，保持默认路径创建新脚本；粘贴刚才复制的代码，并将第一行改为 <code>extends Area2D</code>。</li>
+      <li>为该 Area2D 添加 CollisionShape2D 与 RectangleShape2D，拖出覆盖篮子的判定范围。</li>
+      <li>将篮子脚本修改为：</li>
+    </ol>
+<pre><code class="gd">extends Area2D
+
+signal died          # 自定义信号：生命耗尽时向外界通知
+var score := 0
+var lives := 3
+
+func _ready() -&gt; void:
+	# 任何 Area2D 与本节点重叠时，触发 _on_pick
+	area_entered.connect(_on_pick)
+
+func _process(delta: float) -&gt; void:
+	var dir := Input.get_axis("move_left", "move_right")
+	position.x += dir * 300.0 * delta
+	position.x = clamp(position.x, 50, 1102)
+
+func _on_pick(other: Area2D) -&gt; void:
+	if other.is_in_group("coin"):
+		score += 1
+	elif other.is_in_group("bomb"):
+		lives -= 1
+		if lives &lt;= 0:
+			died.emit()   # 发出信号：游戏结束
+	other.queue_free()   # 被接住的对象随即销毁
+	print("分数:", score, " 生命:", lives)</code></pre>
+
+    <h3>6.4 界面显示与游戏结束重开</h3>
+    <ol>
+      <li>在 main.tscn 中新建 <code>CanvasLayer</code> 节点（UI 层，始终显示在最上层），为其添加 <code>Label</code> 子节点，Text 填写「分数: 0」，并将 Label 拖至画面左上角。</li>
+      <li>将主脚本<strong>整体替换</strong>为以下最终版（可直接完整复制）：</li>
+    </ol>
+<pre><code class="gd">extends Node2D
+
+# preload 提前将场景文件加载进来（类似 import）
+var coin_scene := preload("res://coin.tscn")
+var bomb_scene := preload("res://bomb.tscn")
+
+var game_over := false
+var spawn_timer: Timer          # 计时器存为成员，游戏结束时要停下它
+
+@onready var basket: Area2D = $Area2D            # $ 加名称 = 按路径查找子节点
+@onready var ui: Label = $CanvasLayer/Label
+
+func _ready() -&gt; void:
+	spawn_timer = Timer.new()
+	spawn_timer.wait_time = 0.8
+	spawn_timer.timeout.connect(_on_spawn)  # 到点发出信号，调用 _on_spawn
+	add_child(spawn_timer)
+	spawn_timer.start()
+	basket.died.connect(_on_game_over)      # 篮子生命耗尽时收到通知
+
+func _on_game_over() -&gt; void:
+	game_over = true
+	spawn_timer.stop()   # 停止生成，画面静止，等待重开
+
+func _on_spawn() -&gt; void:
+	# 80% 概率生成金币，20% 概率生成炸弹
+	var scene := coin_scene if randf() &lt; 0.8 else bomb_scene
+	var item := scene.instantiate()  # 从模板生成一个实例
+	item.position = Vector2(randf_range(60.0, 1090.0), -30)  # 屏幕上方的随机位置
+	add_child(item)  # 加入场景树后，它自动开始执行自己的下落逻辑
+	item.start_falling()
+
+func _process(_delta: float) -&gt; void:
+	if game_over:
+		ui.text = "游戏结束！最终分数 %d —— 按 R 重新开始" % basket.score
+		if Input.is_action_just_pressed("restart"):
+			get_tree().reload_current_scene()  # 重新加载场景，最简单的重开实现
+		return
+	ui.text = "分数: %d    生命: %d" % [basket.score, basket.lives]</code></pre>
+    <ol start="3">
+      <li>按 5.2 步骤 4 的方式在输入映射中添加 <code>restart</code> 动作并绑定 R 键。</li>
+    </ol>
+    <div class="achieve">能够完整进行一局游戏——掉落、接取、计分、扣减生命、游戏结束（画面随之静止）、按 R 重新开始。这就是一个最小的「垂直切片」：核心玩法循环已经完整闭环。</div>
+
+    <h3>6.5 添加音效</h3>
+    <ol>
+      <li>在 <code>freesound.org</code> 搜索一个金币音效与一个爆炸音效，下载 wav 文件后拖入文件面板。</li>
+      <li>回到 main.tscn，为篮子的 Area2D 添加两个 <code>AudioStreamPlayer</code> 子节点，分别重命名为 <code>CoinSound</code> 与 <code>BombSound</code>，在检查器的 Stream 属性槽中拖入对应的音频文件。</li>
+      <li>将篮子脚本的 <code>_on_pick</code> 修改为：</li>
+    </ol>
+<pre><code class="gd">func _on_pick(other: Area2D) -&gt; void:
+	if other.is_in_group("coin"):
+		score += 1
+		$CoinSound.play()   # 播放接取音效
+	elif other.is_in_group("bomb"):
+		lives -= 1
+		$BombSound.play()   # 播放碰撞音效
+		if lives &lt;= 0:
+			died.emit()   # 发出信号：游戏结束
+	other.queue_free()   # 被接住的对象随即销毁</code></pre>
+    <div class="note">说明：音效播放器挂在篮子上、由接取逻辑触发，而不是挂在金币上——金币被接住后会立即销毁，挂在它身上的声音也会被一并清除。新手最容易忽略的往往是音频，请记住原则：<strong>每一个游戏事件都应有对应的声音反馈</strong>（接取得分、碰撞、按钮点击等）。没有声音的游戏，体验会明显单薄。</div>
+
+    <h3>6.6 完成之后：五项改造练习</h3>
+    <p>跟完教程只是起点。以下五项练习由易到难，每完成一项，都会促使你亲手编写教程中未讲解的代码——这正是从「跟着做」到「自己做」的过渡。卡住时先查内置文档（F1），再搜索报错信息。</p>
+    <table>
+      <tr><th scope="col">练习</th><th>目标</th><th>涉及的知识</th></tr>
+      <tr><td>1 难度递增</td><td>随存活时间推移，生成间隔从 0.8 秒逐渐缩短到 0.4 秒</td><td>计时器属性动态修改、难度曲线（第 8 章）</td></tr>
+      <tr><td>2 最高分存档</td><td>关闭游戏后再打开，最高分仍然保留</td><td>ConfigFile 读写 user:// 路径</td></tr>
+      <tr><td>3 连击系统</td><td>连续接金币时分数翻倍，碰到炸弹后连击清零</td><td>状态变量、UI 刷新</td></tr>
+      <tr><td>4 鼠标操控</td><td>篮子跟随鼠标水平移动，与键盘并存</td><td>Input 事件、get_global_mouse_position</td></tr>
+      <tr><td>5 暂停功能</td><td>按 Esc 暂停并显示「继续 / 重新开始」</td><td>get_tree().paused、Process Mode 属性</td></tr>
+    </table>
+  </section>
+
+  <!-- 7 -->
+  <section id="juice">
+    <h2>游戏手感<span class="no">第 7 章</span></h2>
+    <p class="lede">相同的玩法规则，经过手感打磨前后带给人的体验完全不同。手感由三个因素决定：输入到反馈的延迟、运动的曲线、反馈的密度。以下是八个性价比最高的技巧，Godot 均提供内置支持。</p>
+    <table>
+      <tr><th scope="col">技巧</th><th>效果</th><th>实现方式</th></tr>
+      <tr><td>压扁与拉伸</td><td>跳跃时拉长、落地时压扁，角色表现立刻生动</td><td>Tween 修改 scale</td></tr>
+      <tr><td>打击停顿</td><td>命中瞬间全局暂停约 0.05 秒，显著增强打击感</td><td><code>Engine.time_scale</code></td></tr>
+      <tr><td>屏幕震动</td><td>受击或爆炸时镜头短促抖动</td><td>相机 offset 加入随机偏移后恢复</td></tr>
+      <tr><td>拖尾残影</td><td>高速移动的物体带有轨迹残像</td><td>半透明 Sprite 复制 / 粒子系统</td></tr>
+      <tr><td>数字弹跳</td><td>伤害数字弹出并向上飘散</td><td>Label 与 Tween 结合</td></tr>
+      <tr><td>音效分层</td><td>动作音与结果音分开设计</td><td>AudioStreamPlayer</td></tr>
+      <tr><td>输入缓冲</td><td>落地前约 0.1 秒内的跳跃输入依然生效，操作更顺畅</td><td>计时器记录输入</td></tr>
+      <tr><td>土狼时间</td><td>离开平台后约 0.1 秒内仍可跳跃</td><td>计时器</td></tr>
+    </table>
+    <p>将以下几行代码加入篮子脚本的 <code>_on_pick</code>（放在计分与音效逻辑之后），即可立即体验效果：</p>
+<pre><code class="gd">	# 接到物品时，篮子产生一次短促的弹性形变
+	var tween := create_tween()
+	tween.tween_property($Sprite2D, "scale", Vector2(1.3, 0.7), 0.05)
+	tween.tween_property($Sprite2D, "scale", Vector2(1, 1), 0.1)</code></pre>
+    <div class="note">延伸学习：搜索演讲视频「Juice it or lose it」，以及游戏《Celeste》开发者在 GDC 大会上的演讲，是手感设计方向的两份经典参考。</div>
+  </section>
+
+  <!-- 8 -->
+  <section id="numbers">
+    <h2>数值设计基础<span class="no">第 8 章</span></h2>
+    <p class="lede">数值设计的本质，是用数字控制玩家的情绪节奏。需要理解三条基本曲线：</p>
+    <div class="card">
+      <p><strong>成长曲线</strong>——玩家变强的成本按指数增长（例如下一等级消耗 = 当前 × 1.15），奖励同步放大。成长的满足感来自「不断变大的数字」。</p>
+      <p><strong>难度曲线</strong>——锯齿形上升：压力逐渐增加，随后给一个释放点，然后继续增压。避免一条平坦的直线。在《接金币》中，体现为生成间隔从 0.8 秒逐渐缩短至 0.4 秒。</p>
+      <p><strong>奖励间隔</strong>——开局前五分钟内，每 30 秒左右给予一项新内容（新敌人、新能力、新场景），此后间隔逐渐拉长。「内容丰富」的第一印象是被设计出来的。</p>
+    </div>
+    <p>实践原则：将所有数值集中存放（一张配置表或 Godot 的 Resource 文件），并在游戏中提供调试面板实时修改。<strong>不要为修改一个数值而重新打包整个游戏。</strong></p>
+  </section>
+
+  <!-- 9 -->
+  <section id="assets">
+    <h2>素材与音频资源<span class="no">第 9 章</span></h2>
+    <p class="lede">首要原则：<strong>风格统一比画面精美更重要</strong>。全套使用同一套免费素材，效果好于多套精美素材的拼凑。</p>
+    <table>
+      <tr><th scope="col">资源</th><th>内容</th><th>授权说明</th></tr>
+      <tr><td>kenney.nl</td><td>数千套 2D / 3D 素材、UI 与音效，独立开发者最常用的免费站点</td><td>CC0，可自由商用</td></tr>
+      <tr><td>itch.io 免费素材</td><td>搜索 asset pack 即可找到大量素材包</td><td>以每个素材包的说明为准</td></tr>
+      <tr><td>OpenGameArt / freesound</td><td>老牌素材与音效仓库</td><td>逐项确认授权</td></tr>
+      <tr><td>Sonniss GDC 音效包</td><td>每年发布的专业音效合集（数十 GB）</td><td>可商用</td></tr>
+      <tr><td>AI 生成</td><td>图片与音乐均可生成</td><td><strong>使用前务必确认商用条款</strong></td></tr>
+      <tr><td>Aseprite / Libresprite</td><td>像素画绘制软件（付费 / 免费开源版），希望自己绘制时学习</td><td>—</td></tr>
+    </table>
+    <p>关于音频的两点建议：背景音乐准备一首循环曲目即可（Audacity 为免费的音频剪辑工具）；音效比背景音乐更重要——每一个游戏事件都应有对应的声音反馈。</p>
+  </section>
+
+  <!-- 10 -->
+  <section id="roadmap">
+    <h2>从原型到完整游戏<span class="no">第 10 章</span></h2>
+    <p class="lede">完成《接金币》之后，制作自己的游戏时建议遵循以下七个阶段。每个阶段都有明确的产出标准，完成一个阶段再进入下一个。</p>
+    <div class="stages">
+      <div class="st"><span class="n">阶段 1</span><b>确定方向</b><em>选定品类，撰写一句话设计，体验 10 个同类作品。约 1–2 天</em></div>
+      <div class="st"><span class="n">阶段 2</span><b>纸面原型</b><em>不写代码，在纸上推演核心循环。约 1 天</em></div>
+      <div class="st"><span class="n">阶段 3</span><b>最小原型</b><em>用最简单的形式让玩法可运行。约 3–7 天</em></div>
+      <div class="st"><span class="n">阶段 4</span><b>垂直切片</b><em>将核心 30 秒做到好玩。约 2–4 周，最重要的阶段</em></div>
+      <div class="st"><span class="n">阶段 5</span><b>内容与数值</b><em>扩充关卡、调整曲线、实现存档。约 2–4 周</em></div>
+      <div class="st"><span class="n">阶段 6</span><b>手感打磨</b><em>音效、动效、反馈全面完善。约 1–2 周</em></div>
+      <div class="st"><span class="n">阶段 7</span><b>发布</b><em>打包、上传平台、根据反馈迭代，见下一章</em></div>
+    </div>
+    <div class="card">
+      <p><strong>一句话设计</strong>模板：这是一个【品类】游戏，玩家通过【核心动作】获得【成长或分数】，每局时长【多长】，让人持续游玩的原因是【核心吸引力】。</p>
+      <p><strong>适合新手的品类</strong>：超休闲（跳跃类）、放置挂机、轻量 Roguelike（单局 5 分钟）、小型塔防。共同特点：玩法单一、单局时间短、失败后可立即重开、内容依靠数值而非新机制扩展。</p>
+    </div>
+    <div class="warn">节奏原则：每周必须产出「可以运行的版本」。长期闭门开发、期望一次完成所有内容，是新手项目失败的最常见原因。另外，验证玩法时应先用简单的色块（白盒），确认好玩之后再替换美术素材——这样节省的是自己的时间。</div>
+  </section>
+
+  <!-- 11 -->
+  <section id="export">
+    <h2>打包与发布<span class="no">第 11 章</span></h2>
+    <h3>11.1 打包为 Windows 可执行文件</h3>
+    <ol>
+      <li>项目设置 → 显示 → 窗口：拉伸模式选择 canvas_items，宽高比选择 keep（保证在不同屏幕上显示正常）。</li>
+      <li>通过菜单栏「<strong>项目 → 导出…</strong>」打开导出面板，点击「添加」选择 Windows 桌面。首次使用会提示缺少导出模板，按引导点击「下载并安装」即可。</li>
+      <li>选择导出路径后点击导出项目，得到 <code>catch_coin.exe</code>，可直接分发。</li>
+    </ol>
+    <h3>11.2 打包为 Android 应用</h3>
+    <p>在同样的导出面板中添加「Android」平台。首次使用需在编辑器菜单（编辑器 → 管理导出模板）中安装 Android 构建模板；若导出时提示缺少 Java 或 Android SDK，按官方文档《Exporting for Android》逐步安装即可。配置完成后可直接导出 apk 文件并安装到安卓手机，此配置只需完成一次。</p>
+    <h3>11.3 发布渠道</h3>
+    <p><strong>itch.io</strong>：面向全球独立游戏的发布平台，免费上传，几分钟即可上线，适合作为第一个发布渠道。<strong>TapTap</strong>：国内的安卓游戏社区，对个人开发者友好，可免费上架。建议先让朋友与社区试玩、收集反馈并迭代，再考虑更大的平台。</p>
+    <div class="achieve">制作出一个其他人无需安装 Godot 即可直接游玩的游戏。至此，「完成了一个游戏」这一目标正式达成。</div>
+  </section>
+
+  <!-- 12 -->
+  <section id="glossary">
+    <h2>术语表<span class="no">第 12 章</span></h2>
+    <p class="lede">遇到不熟悉的术语时可随时返回本章查阅，按主题分组排列。</p>
+    <h3>引擎与开发</h3>
+    <table>
+      <tr><th scope="col">术语</th><th>释义</th></tr>
+      <tr><td>游戏循环</td><td>引擎每秒约 60 次重复「读取输入 → 计算逻辑 → 绘制画面」的过程，开发者编写的代码被它反复调用</td></tr>
+      <tr><td>场景树（Scene Tree）</td><td>运行中的游戏里所有节点的父子层级结构，根节点是整个游戏窗口</td></tr>
+      <tr><td>GDScript</td><td>Godot 官方脚本语言，语法接近 Python，本指南全程使用</td></tr>
+      <tr><td>精灵（Sprite）</td><td>2D 游戏中的一张可移动图片（角色、道具等）</td></tr>
+      <tr><td>瓦片地图（Tilemap）</td><td>用小方块拼合大地图的系统，用于绘制关卡</td></tr>
+      <tr><td>碰撞体</td><td>挂在节点上的判定区域，决定对象之间的接触关系</td></tr>
+      <tr><td>Area2D</td><td>只检测重叠、不产生阻挡的判定区域（拾取范围、伤害范围）</td></tr>
+      <tr><td>补间（Tween）</td><td>「将某个值从 A 平滑变化到 B，耗时 0.3 秒」的动效工具</td></tr>
+      <tr><td>状态机</td><td>将「待机 / 移动 / 跳跃 / 攻击」等状态及其切换条件整理成一张表的编程模式</td></tr>
+      <tr><td>粒子</td><td>爆炸、火花、烟雾等由大量小图组成的程序化效果</td></tr>
+      <tr><td>着色器（Shader）</td><td>决定每个像素颜色的 GPU 程序，入门阶段可以不接触</td></tr>
+      <tr><td>场景实例化</td><td>将做好的场景作为模板，生成任意数量的副本</td></tr>
+      <tr><td>delta</td><td>当前帧消耗的秒数；位移乘以它，才能保证不同帧率下速度一致</td></tr>
+    </table>
+    <h3>设计</h3>
+    <table>
+      <tr><th scope="col">术语</th><th>释义</th></tr>
+      <tr><td>核心循环</td><td>玩家每 30–60 秒重复一遍的「行动 → 获得 → 反馈」闭环，游戏设计的中心</td></tr>
+      <tr><td>垂直切片</td><td>将最核心的一段玩法做到成品质量，用于验证「是否好玩」</td></tr>
+      <tr><td>白盒</td><td>用简单的色块先行验证玩法，确认后再替换正式美术</td></tr>
+      <tr><td>原型</td><td>可以运行但外观简陋的版本（即 MVP，最小可行产品）</td></tr>
+      <tr><td>手感（Juice）</td><td>操作反馈的综合体验：顺畅、有弹性、有声音</td></tr>
+      <tr><td>留存</td><td>次日 / 第七日仍返回游玩的比例，衡量游戏质量的重要指标</td></tr>
+    </table>
+  </section>
+
+  <!-- 13 -->
+  <section id="faq">
+    <h2>常见问题<span class="no">第 13 章</span></h2>
+    <div class="card">
+      <h4 style="margin-top:0">1. 代码报错提示缩进错误怎么办？</h4>
+      <p>GDScript 以缩进表示层级，全篇必须统一（全部 Tab 或全部 4 空格）。从网页复制代码时容易混入空格，全选后统一重新缩进即可。</p>
+      <h4>2. 修改后没有生效？</h4>
+      <p>多数情况是未保存。应养成修改后按 Ctrl+S 的习惯。</p>
+      <h4>3. 可以一开始就制作开放世界 RPG 吗？</h4>
+      <p>不建议。先完整实现三个小规模游戏为宜。第一款游戏的合理目标应该是「完整做出一个已被验证好玩的类型」，而非原创的大型作品。</p>
+      <h4>4. 素材没有准备完成，不敢开始怎么办？</h4>
+      <p>先用白盒（色块）验证玩法是否好玩，再替换正式美术。美术是放大器，不是地基。</p>
+      <h4>5. 是否需要先学习 C++ 或阅读引擎源码？</h4>
+      <p>不需要。GDScript 配合内置文档（F1）足以支撑很长时间的学习。引擎源码是为修改引擎的开发者准备的。</p>
+      <h4>6. 什么时候可以开始学习 3D？</h4>
+      <p>建议至少用 2D 完整做出一个游戏之后。2D 阶段学到的一切（循环、状态机、手感、数值）都可以直接迁移到 3D。</p>
+      <h4>延伸资源</h4>
+      <ul>
+        <li><strong>官方文档</strong>（<a href="https://docs.godotengine.org" target="_blank" rel="noopener">docs.godotengine.org</a>，有中文页面）：按 F1 在编辑器内随时可查，内容比任何第三方教程权威。</li>
+        <li><strong>官方入门教程「Your first 2D game」</strong>：与本指南第 5、6 章同类型的官方实践（Dodge the Creeps），适合作为第二遍练习，见官方文档 Step by step 章节。</li>
+        <li><strong>官方问答论坛与社区</strong>（<a href="https://godotforums.org" target="_blank" rel="noopener">godotforums.org</a>、Reddit 的 r/godot）：遇到报错先搜索，绝大多数问题都有人遇到过并已解答。</li>
+        <li><strong>GDScript 交互式教程</strong>：编辑器内置，帮助熟悉语法细节。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section id="quest">
+    <h2>学习进度清单<span class="no">第 14 章</span></h2>
+    <p class="lede">勾选状态会自动保存在浏览器中。完成以下全部条目后，即已跨过游戏开发的入门门槛。</p>
+    <div class="quest">
+      <div class="qhead"><b>入门任务</b><span class="qcount" id="qcount"></span></div>
+      <label><input type="checkbox" data-q="1"><span>下载 Godot 标准版并成功运行</span></label>
+      <label><input type="checkbox" data-q="2"><span>完成「可控制的角色」</span></label>
+      <label><input type="checkbox" data-q="3"><span>完成《接金币》：掉落、计分、胜负、重开</span></label>
+      <label><input type="checkbox" data-q="4"><span>为游戏添加音效与弹性形变动效</span></label>
+      <label><input type="checkbox" data-q="5"><span>导出 exe 并分发给一位朋友试玩</span></label>
+      <label><input type="checkbox" data-q="6"><span>为自己构思的游戏撰写一句话设计</span></label>
+      <label><input type="checkbox" data-q="7"><span>体验 10 个同类型游戏，并记录其吸引人持续游玩的原因</span></label>
+      <label><input type="checkbox" data-q="8"><span>完成至少一项 6.6 的改造练习</span></label>
+    </div>
+  </section>
+
+  <footer>
+    Godot 游戏开发入门指南 · 内容基于 Godot 4.x 编写（引擎本身完全免费且开源）· 本页面为纯静态 HTML，可离线使用<br>
+    引擎版本更新后，菜单与界面细节可能略有调整，但整体方法不受影响。学习过程中如遇阻碍，建议先查阅底部输出面板的错误信息与官方文档（F1），超过 20 分钟仍无法解决时再寻求外部帮助。
+  </footer>
+
+</main>
+</div>
+
+<script>
+(function(){
+  /* 像素金币（8×8 像素图案，以 box-shadow 绘制） */
+  (function(){
+    var G='#F2B830',D='#C4881A',W='#FFE9A8',O='#8A5B06';
+    var px=[
+      [0,2,O],[0,3,O],[0,4,O],[0,5,O],
+      [1,1,O],[1,2,G],[1,3,G],[1,4,G],[1,5,G],[1,6,O],
+      [2,0,O],[2,1,G],[2,2,D],[2,3,W],[2,4,W],[2,5,D],[2,6,G],[2,7,O],
+      [3,0,O],[3,1,G],[3,2,D],[3,3,D],[3,4,W],[3,5,D],[3,6,G],[3,7,O],
+      [4,0,O],[4,1,G],[4,2,D],[4,3,D],[4,4,D],[4,5,D],[4,6,G],[4,7,O],
+      [5,0,O],[5,1,G],[5,2,D],[5,3,W],[5,4,D],[5,5,D],[5,6,G],[5,7,O],
+      [6,1,O],[6,2,G],[6,3,G],[6,4,G],[6,5,G],[6,6,O],
+      [7,2,O],[7,3,O],[7,4,O],[7,5,O]
+    ];
+    var s=[],S=6;
+    px.forEach(function(p){ s.push((p[1]*S)+'px '+(p[0]*S)+'px 0 0 '+p[2]); });
+    var c=document.getElementById('pixelCoin');
+    c.style.background=px[0][2];
+    c.style.boxShadow=s.join(',');
+  })();
+
+  /* 主题切换（保存于 localStorage，并同步移动端地址栏颜色） */
+  var btn=document.getElementById('themeBtn');
+  var tcm=document.getElementById('themeColorMeta');
+  function apply(t){
+    document.documentElement.dataset.theme=t;
+    btn.textContent = t==='dark' ? '切换至浅色模式' : '切换至深色模式';
+    if(tcm){ tcm.content = t==='dark' ? '#10141B' : '#F4F5F8'; }
+  }
+  var saved=null; try{ saved=localStorage.getItem('gd-theme'); }catch(e){}
+  apply(saved || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  btn.addEventListener('click',function(){
+    var t=document.documentElement.dataset.theme==='dark'?'light':'dark';
+    apply(t); try{ localStorage.setItem('gd-theme',t); }catch(e){}
+  });
+
+  /* 阅读进度条 */
+  var xp=document.getElementById('xp');
+  function updXp(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight||1);
+    xp.style.width=(p*100).toFixed(1)+'%';
+    xp.setAttribute('aria-valuenow',Math.round(p*100));
+  }
+  addEventListener('scroll',updXp,{passive:true});
+  updXp();
+
+  /* 窄屏下目录默认收起 */
+  if(matchMedia('(max-width:920px)').matches){
+    var d=document.querySelector('aside.toc details');
+    if(d){ d.removeAttribute('open'); }
+  }
+
+  /* 目录高亮（不支持 IntersectionObserver 的旧浏览器静默跳过） */
+  if('IntersectionObserver' in window){
+    var links=[].slice.call(document.querySelectorAll('#toc a'));
+    var map={};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)]=a; });
+    var obs=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('on')});
+          var a=map[e.target.id]; if(a){a.classList.add('on')}
+        }
+      });
+    },{rootMargin:'-15% 0px -70% 0px'});
+    [].slice.call(document.querySelectorAll('main section[id]')).forEach(function(s){obs.observe(s)});
+  }
+
+  /* 学习清单持久化 */
+  var boxes=[].slice.call(document.querySelectorAll('.quest input'));
+  var qc=document.getElementById('qcount');
+  function refresh(){
+    var done=boxes.filter(function(b){return b.checked}).length;
+    qc.textContent=done+' / '+boxes.length+(done===boxes.length&&boxes.length?' —— 已全部完成':'');
+    boxes.forEach(function(b){ try{ localStorage.setItem('gd-q'+b.dataset.q, b.checked?'1':'0'); }catch(e){} });
+  }
+  boxes.forEach(function(b){
+    try{ b.checked = localStorage.getItem('gd-q'+b.dataset.q)==='1'; }catch(e){}
+    b.addEventListener('change',refresh);
+  });
+  refresh();
+
+  /* GDScript 轻量语法高亮（单遍处理：注释 / 字符串 / 数字 / 关键字） */
+  [].slice.call(document.querySelectorAll('pre code.gd')).forEach(function(code){
+    var esc=code.textContent.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var re=/(#[^\n]*)|("(?:[^"\\]|\\.)*")|\b(\d+(?:\.\d+)?)\b|\b(func|var|const|extends|signal|if|elif|else|for|while|return|pass|and|or|not|in|is|as|match|class|class_name|static|await|yield|break|continue|self|true|false|null|void|enum|export|onready|tool|breakpoint|preload|assert)\b/g;
+    var out='',last=0,m,cls=['c','s','n','k'];
+    while((m=re.exec(esc))!==null){
+      out+=esc.slice(last,m.index);
+      for(var i=1;i<=4;i++){ if(m[i]!=null){ out+='<span class="'+cls[i-1]+'">'+m[i]+'</span>'; break; } }
+      last=m.index+m[0].length;
+    }
+    out+=esc.slice(last);
+    code.innerHTML=out;
+  });
+
+  /* 代码块复制按钮（含 file:// 场景的降级方案） */
+  [].slice.call(document.querySelectorAll('pre code.gd')).forEach(function(code){
+    var pre=code.parentNode;
+    var b=document.createElement('button');
+    b.type='button';b.className='copy-btn';b.textContent='复制';
+    function legacy(){
+      var ta=document.createElement('textarea');
+      ta.value=code.textContent;
+      ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta); return ok;
+    }
+    b.addEventListener('click',function(){
+      var done=function(ok){ b.textContent = ok?'已复制':'复制失败'; setTimeout(function(){ b.textContent='复制'; },1600); };
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(code.textContent).then(function(){done(true)},function(){done(legacy())});
+      }else{
+        done(legacy());
+      }
+    });
+    pre.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>
