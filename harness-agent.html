@@ -1,0 +1,2157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Harness Agent 全景手册：从零读懂智能体运行时架构，对照 ZCode 与 Deepseek-Harness 源码。">
+<title>Harness Agent 全景手册</title>
+<style>
+/* Harness Agent · 自包含阅读界面 */
+:root {
+  color-scheme: light;
+  --bg: #fff; --bg-soft: #f5f7fb; --surface-hover: #edf1f8;
+  --fg: #27364c; --heading: #172a46; --fg-muted: #5e6e84; --fg-subtle: #617188;
+  --accent: #315ed4; --accent-hover: #234cb8; --accent-soft: #edf2ff; --link: #2b59c3;
+  --border: #e0e6ef; --border-strong: #cbd5e3;
+  --code-bg: #f1f4f9; --code-border: #e0e6ef; --code-fg: #314e78; --pre-bg: #f7f9fc;
+  --callout-info-bg: #f0f5ff; --callout-info-border: #b9cdf5; --callout-info-icon: #315ed4;
+  --callout-tip-bg: #edf7f6; --callout-tip-border: #b6dbd5; --callout-tip-icon: #24746a;
+  --callout-warn-bg: #fff8e9; --callout-warn-border: #e8cf98; --callout-warn-icon: #8c6012;
+  --repo-bg: #f5f4fc; --repo-border: #d9d3ed; --repo-title: #65508a;
+  --mark-bg: #fff0aa; --kbd-bg: #fff; --svg-line: #7a8eac; --svg-fill: #f0f4fb;
+  --scrim: rgba(19,34,58,.38); --shadow-dialog: 0 24px 80px rgba(25,45,78,.2);
+  --font-body: "Noto Sans SC", "Microsoft YaHei UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-display: "Bahnschrift", "Segoe UI Variable Display", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+  --font-code: "Cascadia Code", "Cascadia Mono", Consolas, "Noto Sans SC", monospace;
+  --header-height: 68px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #142033; --bg-soft: #1b2a40; --surface-hover: #24354e;
+  --fg: #ced8e7; --heading: #ecf1fa; --fg-muted: #a3b2c9; --fg-subtle: #96a7c0;
+  --accent: #9ab7ff; --accent-hover: #b6cbff; --accent-soft: #263b61; --link: #a5bfff;
+  --border: #2d3e57; --border-strong: #435874;
+  --code-bg: #21314a; --code-border: #344761; --code-fg: #bad0f6; --pre-bg: #18263b;
+  --callout-info-bg: #1c2f4c; --callout-info-border: #385784; --callout-info-icon: #a5bfff;
+  --callout-tip-bg: #1b3438; --callout-tip-border: #345b5d; --callout-tip-icon: #9ed7c9;
+  --callout-warn-bg: #383122; --callout-warn-border: #6e5b32; --callout-warn-icon: #e7c77b;
+  --repo-bg: #2a2943; --repo-border: #4a4268; --repo-title: #c3b1ec;
+  --mark-bg: #615122; --kbd-bg: #24354e; --svg-line: #8198b9; --svg-fill: #22344f;
+  --scrim: rgba(5,13,27,.65); --shadow-dialog: 0 24px 80px rgba(0,0,0,.4);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scrollbar-gutter: stable; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.95; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+button, input { font: inherit; }
+button, a, input, summary, [tabindex] { -webkit-tap-highlight-color: transparent; }
+button { color: inherit; }
+button:not(:disabled), summary { cursor: pointer; }
+button:disabled { cursor: wait; }
+[hidden] { display: none !important; }
+::selection { background: var(--accent-soft); color: var(--heading); }
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+a:hover { color: var(--accent-hover); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+main:focus { outline: none; }
+svg { display: inline-block; vertical-align: middle; }
+button svg, a.button svg, .cover-node svg, .cover-connection svg, .outline-study > svg, .callout-title svg, .repo-box-title svg, .msg .role svg, .code-label svg, .chapter-navigation svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 10px; left: 20px; z-index: 100; padding: 8px 16px; background: var(--accent); color: var(--bg); transform: translateY(-160%); }
+.skip-link:focus { transform: none; }
+
+/* 字号以阅读为基准；文字色深承担信息层级。 */
+h1, h2, h3, h4 { color: var(--heading); font-weight: 650; line-height: 1.5; text-wrap: pretty; }
+h1, h2, h3, h4, section[id], figure[id], details[id], #top { scroll-margin-top: calc(var(--header-height) + 30px); }
+h1 { margin: 0; }
+h2 { font-size: 28px; margin: 0 0 26px; letter-spacing: -.035em; }
+h3 { font-size: 20px; margin: 40px 0 15px; letter-spacing: -.02em; }
+h4 { font-size: 17px; margin: 28px 0 12px; }
+p { margin: 15px 0; overflow-wrap: anywhere; }
+ul, ol { padding-left: 1.45em; margin: 18px 0; }
+li { margin: 10px 0; padding-left: .22em; }
+li::marker { color: var(--fg-subtle); font-size: .88em; }
+strong { font-weight: 650; color: var(--heading); }
+hr { border: 0; border-top: 1px solid var(--border); margin: 36px 0; }
+mark { background: var(--mark-bg); color: var(--heading); padding: .06em .2em; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+kbd { display: inline-block; font: 11px/1.6 var(--font-body); color: var(--fg-muted); background: var(--kbd-bg); border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; white-space: nowrap; }
+code { font-family: var(--font-code); font-size: .87em; font-variant-ligatures: none; color: var(--code-fg); background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 4px; padding: .1em .32em; overflow-wrap: anywhere; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+pre { max-width: 100%; margin: 24px 0; padding: 22px 24px; overflow: auto; background: var(--pre-bg); color: var(--fg); border: 1px solid var(--code-border); border-radius: 10px; font-size: 13px; line-height: 1.95; tab-size: 2; }
+pre code { font-size: inherit; line-height: inherit; color: inherit; background: none; padding: 0; border: 0; overflow-wrap: normal; }
+.syntax-comment { color: var(--fg-muted); }
+.syntax-keyword { color: var(--accent); font-weight: 500; }
+.syntax-string { color: var(--callout-tip-icon); }
+.syntax-number { color: var(--repo-title); }
+blockquote { margin: 26px 0; padding: 14px 22px; border-left: 3px solid var(--accent); background: var(--bg-soft); border-radius: 0 8px 8px 0; color: var(--fg); font-size: 15px; }
+blockquote p:first-child { margin-top: 0; } blockquote p:last-child { margin-bottom: 0; }
+.heading-anchor { margin-left: .45em; font-size: .8em; color: var(--accent); opacity: 0; text-decoration: none; font-weight: 400; }
+h3:hover .heading-anchor, .heading-anchor:focus-visible { opacity: 1; }
+.lead { color: var(--fg-muted); font-size: 17px; line-height: 1.95; margin-bottom: 24px; }
+
+/* 目录、正文、本章导读。 */
+.site-header { position: sticky; top: 0; z-index: 30; height: var(--header-height); background: var(--bg); border-bottom: 1px solid var(--border); }
+.site-header .bar { max-width: 1536px; height: 100%; margin: 0 auto; padding: 0 40px; display: flex; align-items: center; gap: 18px; }
+.site-brand { display: inline-flex; align-items: center; gap: 11px; color: var(--heading); text-decoration: none; font-family: var(--font-display); font-size: 18px; font-weight: 600; letter-spacing: -.025em; white-space: nowrap; }
+.brand-mark { width: 33px; height: 33px; color: var(--accent); }
+:root[data-theme="dark"] .brand-mark { color: #4e76d7; }
+.header-divider { color: var(--border-strong); font-size: 20px; font-weight: 300; }
+.crumb { color: var(--fg-muted); font-size: 13px; text-decoration: none; white-space: nowrap; }
+.spacer { flex: 1; }
+.header-link { font-size: 13px; color: var(--fg-muted); text-decoration: none; white-space: nowrap; }
+.icon-button { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; padding: 0; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--fg-muted); }
+.icon-button:hover { color: var(--heading); background: var(--surface-hover); }
+#theme-toggle { border-color: var(--border); }
+.search-trigger { display: none; align-items: center; gap: 9px; height: 36px; min-width: 190px; padding: 0 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-soft); color: var(--fg-muted); font-size: 12px; }
+.js .search-trigger { display: inline-flex; }
+.search-trigger:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+.search-trigger svg { width: 17px; height: 17px; }
+.search-trigger kbd { margin-left: auto; }
+.mobile-menu, .drawer-close { display: none; }
+.reading-progress { position: absolute; height: 2px; bottom: -1px; left: 0; right: 0; pointer-events: none; }
+.reading-progress span { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+.layout { display: grid; grid-template-columns: 224px minmax(0,840px) 176px; gap: 40px; align-items: start; justify-content: center; max-width: 1536px; margin: 0 auto; padding: 42px 40px 0; }
+main { min-width: 0; max-width: 840px; padding: 0 0 60px; }
+nav.toc { position: sticky; top: calc(var(--header-height) + 28px); max-height: calc(100dvh - var(--header-height) - 48px); overflow-y: auto; overscroll-behavior: contain; padding: 0 12px 8px 0; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; font-size: 13px; line-height: 1.65; }
+.toc-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 10px 22px; }
+.toc-title { display: flex; align-items: center; gap: 10px; color: var(--heading); font-size: 14px; font-weight: 650; text-decoration: none; }
+.toc-title span { font-size: 10px; font-weight: 500; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; color: var(--fg-muted); }
+.toc-group-title { margin: 24px 10px 9px; color: var(--fg-subtle); font-size: 12px; font-weight: 550; }
+nav.toc ol { padding: 0; margin: 0; list-style: none; }
+nav.toc li { margin: 3px 0; padding: 0; }
+nav.toc a:not(.toc-title):not(.back-to-cover) { position: relative; display: flex; align-items: baseline; gap: 9px; padding: 9px 10px; border-radius: 6px; color: var(--fg-muted); text-decoration: none; transition: background-color .15s,color .15s; }
+nav.toc a:not(.toc-title):not(.back-to-cover):hover { background: var(--bg-soft); color: var(--heading); }
+nav.toc a.active:not(.toc-title):not(.back-to-cover) { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+nav.toc a.active::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--accent); }
+.toc-number { min-width: 20px; font-family: var(--font-display); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--fg-subtle); }
+.active .toc-number { color: var(--accent); }
+.toc-progress { margin: 28px 10px 0; padding-top: 20px; border-top: 1px solid var(--border); }
+.toc-progress > div:first-child { display: flex; justify-content: space-between; gap: 12px; color: var(--fg-subtle); font-size: 11px; }
+#reading-percentage { font-family: var(--font-display); font-size: 12px; font-variant-numeric: tabular-nums; }
+.progress-track { height: 3px; margin: 11px 0 16px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-track span { display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+.back-to-cover { display: flex; justify-content: space-between; color: var(--fg-muted); text-decoration: none; font-size: 11px; padding: 3px 0; }
+
+/* 封面以模型、运行时与环境的关系作为视觉中心。 */
+.manual-cover { padding: 4px 0 37px; margin-bottom: 42px; border-bottom: 1px solid var(--border); }
+.cover-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.manual-cover h1 { font-family: var(--font-display); font-size: clamp(38px,3.5vw,52px); font-weight: 600; line-height: 1.14; letter-spacing: -.045em; }
+.manual-cover h1 > span { display: block; margin-top: 13px; font-family: var(--font-body); font-size: 30px; font-weight: 650; letter-spacing: .03em; line-height: 1.5; }
+.cover-edition { margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--border-strong); color: var(--fg-subtle); font-size: 11px; line-height: 1.9; white-space: nowrap; }
+.cover-description { color: var(--fg-muted); font-size: 14px; line-height: 1.95; max-width: 40em; margin: 19px 0 23px; }
+.cover-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.button { display: inline-flex; min-height: 43px; align-items: center; justify-content: center; gap: 14px; padding: 9px 18px; border: 1px solid transparent; border-radius: 7px; font-size: 13px; font-weight: 550; line-height: 1.6; text-decoration: none; transition: background-color .15s,border-color .15s; }
+.button svg { width: 17px; height: 17px; }
+.button-primary { color: #fff; background: #315ed4; border-color: #315ed4; }
+.button-primary:hover { color: #fff; background: #234cb8; border-color: #234cb8; }
+:root[data-theme="dark"] .button-primary { color: #11213c; background: #a5bfff; border-color: #a5bfff; }
+:root[data-theme="dark"] .button-primary:hover { background: #c0d2ff; border-color: #c0d2ff; }
+.button-quiet { color: var(--fg-muted); }
+.button-quiet:hover { color: var(--heading); background: var(--bg-soft); }
+.cover-diagram { margin: 32px 0 0; padding: 23px 22px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 11px; text-align: left; }
+.cover-node { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.node-symbol { display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; color: var(--fg-muted); }
+.cover-node strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.cover-node div > span { display: block; color: var(--fg-muted); font-size: 11px; margin-top: 4px; white-space: nowrap; }
+.harness-node { border: 1px solid var(--border-strong); background: var(--bg); border-radius: 8px; padding: 12px 15px 12px 9px; }
+.harness-node .node-symbol, .harness-node strong { color: var(--accent); }
+.cover-connection { display: flex; flex: 1; min-width: 34px; max-width: 66px; flex-direction: column; align-items: center; gap: 2px; color: var(--fg-muted); font-size: 10px; white-space: nowrap; }
+.cover-connection svg { display: block; width: 100%; height: 22px; stroke: var(--svg-line); stroke-width: 1.2; }
+.cover-note { color: var(--fg-muted); font-size: 12px; text-align: center; margin: 11px 0 0; }
+
+/* 按语义区分组件，统一留白节奏。 */
+.chapter { border-top: 1px solid var(--border); margin-top: 58px; padding-top: 42px; }
+.chapter:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+.chapter > h2 .chapter-no { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 550; line-height: 1.5; color: var(--accent); margin-bottom: 11px; letter-spacing: .02em; }
+.chapter > h2 .chapter-no::after { content: ""; width: 27px; height: 1px; background: var(--accent); opacity: .45; }
+.callout { --callout-icon: var(--callout-info-icon); border: 1px solid var(--callout-info-border); background: var(--callout-info-bg); border-radius: 9px; padding: 18px 21px; margin: 25px 0; font-size: 14px; line-height: 1.95; }
+.callout.tip { --callout-icon: var(--callout-tip-icon); border-color: var(--callout-tip-border); background: var(--callout-tip-bg); }
+.callout.warn { --callout-icon: var(--callout-warn-icon); border-color: var(--callout-warn-border); background: var(--callout-warn-bg); }
+.callout-title { display: flex; align-items: center; gap: 9px; color: var(--heading); font-size: 14px; font-weight: 650; margin-bottom: 7px; }
+.callout-title svg { width: 18px; height: 18px; color: var(--callout-icon); }
+.repo-box { border: 1px solid var(--repo-border); background: var(--repo-bg); border-radius: 9px; padding: 19px 21px; margin: 25px 0; font-size: 14px; line-height: 1.95; }
+.repo-box-title { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 650; color: var(--repo-title); margin-bottom: 11px; }
+.repo-box-title svg { width: 17px; height: 17px; }
+.repo-box ul { margin: 6px 0 0; padding-left: 1.3em; } .repo-box li { margin: 8px 0; }
+.code-block { margin: 25px 0; border: 1px solid var(--code-border); border-radius: 10px; overflow: hidden; }
+.code-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 7px 14px 7px 19px; background: var(--bg-soft); border-bottom: 1px solid var(--code-border); min-height: 43px; }
+.code-label { display: flex; align-items: center; gap: 8px; color: var(--fg-muted); font-size: 12px; }
+.code-label svg { width: 16px; height: 16px; }
+.copy-code { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 4px 8px; color: var(--fg-muted); font-size: 12px; line-height: 1.5; border: none; border-radius: 5px; background: transparent; }
+.copy-code svg { width: 14px; height: 14px; }
+.copy-code:hover { background: var(--surface-hover); color: var(--heading); } .copy-code.copied { color: var(--callout-tip-icon); }
+.code-block pre { margin: 0; border: 0; border-radius: 0; }
+.table-wrap { width: 100%; max-width: 100%; margin: 25px 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 9px; scrollbar-width: thin; }
+table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 13px; line-height: 1.8; }
+.table-wrap table { margin: 0; border: none; }
+th, td { padding: 13px 15px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+th { font-size: 12px; font-weight: 600; color: var(--heading); background: var(--bg-soft); white-space: nowrap; }
+td + td, th + th { border-left: 1px solid var(--border); }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:nth-child(even) { background: color-mix(in srgb,var(--bg-soft) 45%,var(--bg)); }
+tbody tr:hover { background: var(--accent-soft); } td code { font-size: 11.5px; }
+figure { margin: 28px 0; text-align: center; }
+figure:not(.cover-diagram) { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; padding: 22px 18px 16px; }
+figure svg { max-width: 100%; height: auto; }
+.figure-scroll { overflow-x: auto; scrollbar-width: thin; }
+.figure-scroll > svg { width: 100%; min-width: 680px; max-width: none; display: block; }
+figcaption { font-size: 12px; color: var(--fg-muted); line-height: 1.8; margin-top: 17px; text-align: left; }
+.figure-hint { font-size: 11px; color: var(--fg-muted); margin: 0 0 12px; text-align: right; }
+details.selftest { border: 1px solid var(--border-strong); border-radius: 9px; background: var(--bg); margin: 30px 0; overflow: hidden; }
+details.selftest summary { position: relative; display: flex; align-items: center; gap: 11px; min-height: 66px; padding: 18px 43px 18px 20px; list-style: none; color: var(--heading); font-size: 14px; font-weight: 600; line-height: 1.8; }
+details.selftest summary::-webkit-details-marker { display: none; }
+details.selftest summary::before { content: "?"; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 25px; height: 25px; border: 1px solid var(--border-strong); color: var(--accent); border-radius: 7px; font-family: var(--font-display); font-size: 15px; font-weight: 550; }
+details.selftest summary::after { content: ""; position: absolute; right: 23px; top: 26px; width: 7px; height: 7px; border-right: 1.5px solid var(--fg-muted); border-bottom: 1.5px solid var(--fg-muted); transform: rotate(45deg); transition: transform .18s; }
+details.selftest summary:hover { background: var(--bg-soft); }
+details.selftest[open] summary { border-bottom: 1px solid var(--border); background: var(--bg-soft); }
+details.selftest[open] summary::after { transform: rotate(225deg); top: 30px; }
+.selftest-body { padding: 8px 23px 19px; font-size: 14px; }
+.selftest .q { color: var(--heading); font-weight: 600; margin: 20px 0 10px; }
+.selftest .a { color: var(--fg-muted); margin: 10px 0 21px; padding-left: 15px; border-left: 2px solid var(--border-strong); }
+.msg-flow { margin: 25px 0; padding-left: 15px; border-left: 1px solid var(--border-strong); font-size: 13px; text-align: left; }
+.msg-flow .msg { position: relative; margin: 12px 0; padding: 13px 17px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; line-height: 1.95; overflow-wrap: anywhere; }
+.msg-flow .msg::before { content: ""; position: absolute; left: -20px; top: 22px; width: 7px; height: 7px; background: var(--border-strong); border: 2px solid var(--bg); border-radius: 50%; box-sizing: content-box; }
+.msg-flow .m-assistant { border-color: var(--callout-info-border); background: var(--callout-info-bg); }
+.msg-flow .m-assistant::before { background: var(--accent); } .msg-flow .m-tool { background: var(--bg); }
+.msg-flow .role { display: flex; align-items: center; gap: 6px; color: var(--fg-muted); font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+.msg-flow .role svg { width: 14px; height: 14px; }
+.msg-flow .m-assistant .role { color: var(--accent); } .msg-flow .m-tool .role { color: var(--callout-tip-icon); }
+.msg-flow code { font-size: .92em; }
+dl.glossary { margin: 25px 0; }
+dl.glossary dt { color: var(--heading); font-size: 16px; font-weight: 600; margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border); }
+dl.glossary dt:first-child { border-top: none; padding-top: 0; }
+dl.glossary dt .en { display: inline; color: var(--fg-muted); font-size: 12px; font-weight: 400; margin-left: 9px; }
+dl.glossary dd { margin: 9px 0 0; color: var(--fg-muted); font-size: 14px; line-height: 1.95; }
+.chapter-navigation { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding-top: 25px; margin-top: 38px; border-top: 1px solid var(--border); }
+.chapter-navigation a { display: flex; gap: 12px; align-items: center; padding: 12px 0; text-decoration: none; color: var(--fg-muted); font-size: 12px; line-height: 1.65; }
+.chapter-navigation a:hover { color: var(--accent); } .chapter-navigation a > div { min-width: 0; }
+.chapter-navigation a span { display: block; font-size: 10px; color: var(--fg-subtle); margin-bottom: 5px; }
+.chapter-navigation a strong { font-size: 13px; font-weight: 550; color: inherit; }
+.chapter-navigation a svg { width: 17px; height: 17px; }
+.chapter-navigation .next-chapter { justify-content: flex-end; text-align: right; grid-column: 2; }
+
+.page-outline { position: sticky; top: calc(var(--header-height) + 36px); min-width: 0; max-height: calc(100dvh - var(--header-height) - 65px); overflow-y: auto; scrollbar-width: thin; padding-left: 3px; font-size: 11px; line-height: 1.8; }
+.outline-title { color: var(--heading); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.outline-chapter { font-size: 12px; color: var(--fg-subtle); margin-bottom: 15px; }
+#section-outline { border-left: 1px solid var(--border); }
+#section-outline a { position: relative; display: block; padding: 7px 0 7px 13px; font-size: 12px; line-height: 1.8; color: var(--fg-muted); text-decoration: none; }
+#section-outline a:hover { color: var(--heading); }
+#section-outline a.active { color: var(--accent); font-weight: 550; }
+#section-outline a.active::before { content: ""; width: 2px; position: absolute; top: 7px; bottom: 7px; left: -1px; background: var(--accent); }
+.outline-study { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); }
+.outline-study > svg { display: block; width: 20px; height: 20px; color: var(--accent); margin-bottom: 12px; }
+.outline-study strong { font-size: 13px; font-weight: 550; }
+.outline-study p { font-size: 12px; color: var(--fg-muted); margin: 9px 0; }
+.outline-study a { display: inline-flex; gap: 7px; margin-top: 4px; text-decoration: none; }
+.site-footer { border-top: 1px solid var(--border); padding: 30px 40px 40px; color: var(--fg-muted); font-size: 12px; background: var(--bg-soft); }
+.site-footer .page-width { max-width: 1232px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 30px; }
+.site-footer strong { font-family: var(--font-display); font-size: 16px; font-weight: 550; display: block; margin-bottom: 5px; }
+.site-footer span { font-size: 11px; } .site-footer p { text-align: right; margin: 0; font-size: 11px; }
+.site-footer a { display: block; margin-top: 6px; text-decoration: none; }
+
+/* 本地全文搜索。 */
+.search-dialog { width: min(680px,calc(100% - 32px)); max-height: min(720px,calc(100dvh - 96px)); margin: 92px auto 0; padding: 0; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--bg); color: var(--fg); box-shadow: var(--shadow-dialog); overflow: hidden; }
+.search-dialog[open] { display: flex; flex-direction: column; }
+.search-dialog::backdrop { background: var(--scrim); backdrop-filter: blur(4px); }
+.search-input-row { display: flex; align-items: center; gap: 13px; padding: 14px 15px 14px 21px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.search-input-row > svg { width: 21px; height: 21px; fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; flex-shrink: 0; }
+.search-input-row input { width: 100%; min-width: 0; border: 0; outline: none; color: var(--heading); background: transparent; font-size: 16px; line-height: 1.8; padding: 5px 0; border-radius: 0; }
+.search-input-row input::placeholder { color: var(--fg-subtle); } .search-input-row input::-webkit-search-cancel-button { display: none; }
+.search-input-row:focus-within { box-shadow: inset 0 -2px var(--accent); }
+.search-status { padding: 15px 23px 8px; color: var(--fg-muted); font-size: 11px; flex-shrink: 0; }
+.search-results { overflow-y: auto; padding: 4px 12px 14px; overscroll-behavior: contain; }
+.search-result { display: block; padding: 14px 13px; border: 1px solid transparent; border-radius: 8px; color: var(--fg); text-decoration: none; line-height: 1.75; margin: 3px 0; }
+.search-result:hover, .search-result.selected { border-color: var(--callout-info-border); background: var(--accent-soft); color: var(--fg); }
+.search-result > span { display: block; font-size: 10px; color: var(--fg-muted); margin-bottom: 4px; }
+.search-result strong { font-size: 14px; font-weight: 600; }
+.search-result p { font-size: 12px; color: var(--fg-muted); margin: 6px 0 0; }
+.search-result mark { padding: 0 1px; }
+.search-suggestions { display: flex; flex-wrap: wrap; gap: 9px; padding: 10px; }
+.search-suggestions button { border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; color: var(--fg-muted); background: var(--bg-soft); font-size: 12px; }
+.search-suggestions button:hover { border-color: var(--accent); color: var(--accent); }
+.search-empty { padding: 24px 12px 38px; color: var(--fg-muted); font-size: 13px; }
+.search-help { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 11px 22px; color: var(--fg-subtle); background: var(--bg-soft); border-top: 1px solid var(--border); font-size: 10px; flex-shrink: 0; }
+.toc-backdrop { display: none; }
+html:not(.js) #theme-toggle, html:not(.js) .page-outline { display: none; }
+
+@media (max-width: 1390px) {
+  .layout { grid-template-columns: 224px minmax(0,840px); gap: 48px; max-width: 1232px; }
+  .page-outline { display: none; }
+}
+@media (max-width: 1100px) and (min-width: 1024px) {
+  .layout { grid-template-columns: 204px minmax(0,1fr); gap: 32px; padding-left: 28px; padding-right: 28px; }
+  .cover-diagram { padding: 18px 12px; gap: 6px; }
+  .node-symbol { display: none; } .harness-node { padding: 10px 13px; }
+}
+@media (max-width: 1023px) {
+  html { scrollbar-gutter: auto; }
+  .site-header .bar { padding: 0 25px; gap: 14px; }
+  .layout { display: block; max-width: 856px; padding: 35px 28px 0; }
+  main { max-width: none; }
+  .js .mobile-menu { display: inline-flex; margin-left: -8px; } .js .drawer-close { display: inline-flex; }
+  nav.toc { position: static; max-height: none; padding: 0; margin-bottom: 35px; }
+  .js nav.toc { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; width: min(320px,86vw); max-height: none; padding: 24px 20px 30px; margin: 0; background: var(--bg); border-right: 1px solid var(--border); visibility: hidden; transform: translateX(-102%); transition: transform .2s ease,visibility .2s; }
+  .js nav.toc.is-open { visibility: visible; transform: translateX(0); }
+  .toc-heading { min-height: 40px; margin: 0 0 20px 10px; }
+  nav.toc a:not(.toc-title):not(.back-to-cover) { min-height: 43px; align-items: center; }
+  .toc-group-title { margin-top: 24px; }
+  .toc-backdrop:not([hidden]) { display: block; position: fixed; inset: 0; z-index: 50; background: var(--scrim); border: 0; padding: 0; }
+  .site-footer { padding-left: 28px; padding-right: 28px; }
+}
+@media (max-width: 620px) {
+  :root { --header-height: 61px; }
+  body { font-size: 15px; line-height: 1.95; }
+  .site-header .bar { padding: 0 17px; gap: 8px; }
+  .site-brand { font-size: 16px; gap: 8px; } .brand-mark { width: 29px; height: 29px; }
+  .header-divider, .crumb, .header-link, .search-trigger .control-label, .search-trigger kbd { display: none; }
+  .icon-button, .search-trigger { width: 38px; height: 40px; min-width: 0; padding: 0; justify-content: center; }
+  .search-trigger { border-color: transparent; background: transparent; } .search-trigger svg { width: 20px; height: 20px; }
+  #theme-toggle { border-color: transparent; }
+  .layout { padding: 30px 21px 0; }
+  .manual-cover { padding: 0 0 30px; margin-bottom: 33px; }
+  .manual-cover h1 { font-size: 39px; } .manual-cover h1 > span { font-size: 27px; margin-top: 10px; }
+  .cover-edition { display: none; }
+  .cover-description { font-size: 13px; margin: 19px 0 22px; }
+  .cover-actions { gap: 5px; } .button { min-height: 44px; font-size: 12px; padding: 9px 14px; gap: 9px; }
+  .cover-diagram { padding: 17px 10px; gap: 5px; margin-top: 27px; }
+  .cover-node { flex-direction: column; text-align: center; gap: 4px; }
+  .node-symbol { width: 28px; height: 28px; }
+  .cover-node strong { font-size: 12px; } .cover-node div > span { font-size: 10px; margin-top: 4px; }
+  .harness-node { padding: 10px 12px; } .harness-node .node-symbol { height: 23px; }
+  .cover-connection { min-width: 22px; max-width: 40px; font-size: 10px; gap: 4px; }
+  .cover-node:last-child div > span { white-space: normal; max-width: 60px; }
+  .cover-note { font-size: 10px; margin-top: 12px; }
+  h2 { font-size: 24px; margin-bottom: 20px; } h3 { font-size: 18px; margin: 32px 0 13px; } h4 { font-size: 16px; }
+  .lead { font-size: 15px; } p { margin: 14px 0; } li { margin: 11px 0; }
+  .chapter { margin-top: 42px; padding-top: 33px; } .chapter > h2 .chapter-no { font-size: 11px; margin-bottom: 9px; }
+  .callout, .repo-box { padding: 17px; font-size: 13px; margin: 22px 0; }
+  .callout-title { font-size: 13px; } .repo-box-title { font-size: 12px; }
+  pre { padding: 17px; font-size: 12px; } .code-toolbar { padding-left: 15px; }
+  table { min-width: 550px; font-size: 12px; } th, td { padding: 11px 13px; }
+  blockquote { padding: 13px 17px; font-size: 13px; }
+  figure:not(.cover-diagram) { padding: 17px 12px 14px; } figcaption { font-size: 11px; }
+  .figure-scroll > svg { min-width: 840px; }
+  details.selftest summary { font-size: 13px; padding: 16px 40px 16px 15px; gap: 9px; }
+  details.selftest summary::after { right: 18px; } .selftest-body { padding-left: 17px; padding-right: 17px; font-size: 13px; }
+  .msg-flow .msg { padding: 12px 13px; }
+  dl.glossary dt { font-size: 15px; } dl.glossary dt .en { font-size: 11px; } dl.glossary dd { font-size: 13px; }
+  .chapter-navigation { gap: 15px; } .chapter-navigation a { font-size: 11px; gap: 7px; } .chapter-navigation a strong { font-size: 12px; }
+  .site-footer { padding: 25px 21px 32px; } .site-footer .page-width { display: block; } .site-footer p { text-align: left; margin-top: 18px; }
+  .search-dialog { margin-top: 18px; max-height: calc(100dvh - 36px); width: calc(100% - 24px); border-radius: 11px; }
+  .search-input-row { padding: 10px 9px 10px 15px; gap: 10px; } .search-input-row input { font-size: 15px; }
+  .search-help { padding: 10px 15px; font-size: 11px; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+@media print {
+  :root, :root[data-theme="dark"] { color-scheme: light; --bg: #fff; --bg-soft: #f5f6f8; --fg: #222; --heading: #111; --fg-muted: #444; --fg-subtle: #555; --border: #ccc; --border-strong: #bbb; --accent: #244eaa; --link: #244eaa; --code-bg: #f5f5f5; --code-border: #ddd; --code-fg: #222; --pre-bg: #f8f8f8; --callout-info-bg: #f4f6fb; --callout-info-border: #bbb; --callout-info-icon: #244eaa; --callout-tip-bg: #f5f8f6; --callout-tip-border: #bbb; --callout-tip-icon: #24665b; --callout-warn-bg: #faf8f0; --callout-warn-border: #bbb; --callout-warn-icon: #805812; --repo-bg: #f7f6fa; --repo-border: #bbb; --repo-title: #444; --mark-bg: #eee; --svg-line: #777; --svg-fill: #f4f4f4; }
+  html { scrollbar-gutter: auto; scroll-behavior: auto; } body { font-size: 10pt; line-height: 1.7; }
+  .site-header, nav.toc, .page-outline, .site-footer, .skip-link, .cover-actions, .heading-anchor, .copy-code, .chapter-navigation, .search-dialog, .toc-backdrop, .figure-hint, .no-print { display: none !important; }
+  .layout { display: block; max-width: none; padding: 0; } main { max-width: none; padding: 0; }
+  .manual-cover h1 { font-size: 36pt; }
+  .chapter { break-before: page; border-top: 0; padding-top: 0; } .chapter:first-of-type { break-before: auto; }
+  h2, h3 { break-after: avoid; } .callout, .repo-box, figure { break-inside: avoid; }
+  .code-block, pre, details.selftest { overflow: visible; }
+  pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 9pt; }
+  .table-wrap, .figure-scroll { overflow: visible; } table, .figure-scroll > svg { min-width: 0; width: 100%; }
+  a { color: inherit; text-decoration: none; }
+}
+
+</style>
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  var system = window.matchMedia('(prefers-color-scheme: dark)');
+  function savedTheme() {
+    try { return localStorage.getItem('harness-theme'); } catch (_) { return null; }
+  }
+  function apply(mode) {
+    root.dataset.theme = mode;
+    var button = document.getElementById('theme-toggle');
+    if (!button) return;
+    var dark = mode === 'dark';
+    var paths = dark
+      ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>'
+      : '<path d="M20.5 13.2A8.7 8.7 0 0 1 10.8 3.5a8.7 8.7 0 1 0 9.7 9.7Z"/>';
+    button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + paths + '</svg>';
+    button.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
+    button.setAttribute('aria-pressed', String(dark));
+    button.title = button.getAttribute('aria-label');
+  }
+  var saved = savedTheme();
+  apply(saved === 'dark' || saved === 'light' ? saved : system.matches ? 'dark' : 'light');
+  document.addEventListener('DOMContentLoaded', function () {
+    apply(root.dataset.theme);
+    document.getElementById('theme-toggle').addEventListener('click', function () {
+      var next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('harness-theme', next); } catch (_) { /* 隐私模式仍可切换。 */ }
+      apply(next);
+    });
+  });
+  system.addEventListener('change', function () {
+    if (!savedTheme()) apply(system.matches ? 'dark' : 'light');
+  });
+  window.addEventListener('storage', function (event) {
+    if (event.key === 'harness-theme') {
+      var mode = savedTheme();
+      apply(mode === 'dark' || mode === 'light' ? mode : system.matches ? 'dark' : 'light');
+    }
+  });
+})();
+
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">跳到正文</a>
+
+<header class="site-header">
+  <div class="bar">
+    <button class="icon-button mobile-menu" id="toc-toggle" type="button" aria-label="打开章节目录" aria-controls="chapter-navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </button>
+    <a class="site-brand" href="#top" aria-label="Harness Agent 手册首页">
+      <svg class="brand-mark" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="11" fill="currentColor"/><path d="M11 10v16m14-16v16M11 18h14" fill="none" stroke="white" stroke-width="2.5"/><circle cx="18" cy="18" r="3" fill="white"/></svg>
+      <span>Harness Agent</span>
+    </a>
+    <span class="header-divider" aria-hidden="true">/</span>
+    <a class="crumb" href="#top">全景手册</a>
+    <span class="spacer"></span>
+    <button class="search-trigger" id="search-toggle" type="button" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="control-label">搜索手册</span><kbd>Ctrl K</kbd>
+    </button>
+    <a class="header-link" href="#ch11">术语速查</a>
+    <button class="icon-button" id="theme-toggle" type="button" aria-label="切换到深色模式">切换主题</button>
+  </div>
+  <div class="reading-progress" aria-hidden="true"><span id="reading-progress-fill"></span></div>
+</header>
+
+<div class="layout">
+
+<nav class="toc" id="chapter-navigation" aria-label="章节目录">
+  <div class="toc-heading">
+    <a class="toc-title" href="#top">学习手册<span>12 章</span></a>
+    <button class="icon-button drawer-close" id="toc-close" type="button" aria-label="关闭章节目录"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+  </div>
+  <ol class="toc-intro">
+    <li><a href="#ch0"><span class="toc-number">序</span><span>如何使用本手册</span></a></li>
+  </ol>
+  <div class="toc-group-title">理解运行时</div>
+  <ol>
+    <li><a href="#ch1"><span class="toc-number">01</span><span>什么是 Harness Agent</span></a></li>
+    <li><a href="#ch2"><span class="toc-number">02</span><span>一次请求的一生</span></a></li>
+    <li><a href="#ch3"><span class="toc-number">03</span><span>核心循环 Agent Loop</span></a></li>
+    <li><a href="#ch4"><span class="toc-number">04</span><span>工具系统</span></a></li>
+    <li><a href="#ch5"><span class="toc-number">05</span><span>系统提示词与上下文工程</span></a></li>
+    <li><a href="#ch6"><span class="toc-number">06</span><span>权限与安全</span></a></li>
+    <li><a href="#ch7"><span class="toc-number">07</span><span>子智能体与编排</span></a></li>
+    <li><a href="#ch8"><span class="toc-number">08</span><span>扩展生态：MCP、Hooks、技能</span></a></li>
+  </ol>
+  <div class="toc-group-title">走进源码</div>
+  <ol start="9">
+    <li><a href="#ch9"><span class="toc-number">09</span><span>ZCode</span></a></li>
+    <li><a href="#ch10"><span class="toc-number">10</span><span>Deepseek-Harness</span></a></li>
+  </ol>
+  <div class="toc-group-title">查阅与实践</div>
+  <ol start="11">
+    <li><a href="#ch11"><span class="toc-number">11</span><span>术语表</span></a></li>
+    <li><a href="#ch12"><span class="toc-number">12</span><span>学习路线图</span></a></li>
+  </ol>
+  <div class="toc-progress">
+    <div><span>阅读进度</span><span id="reading-percentage">0%</span></div>
+    <div class="progress-track" role="progressbar" aria-label="全文阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="reading-meter"><span id="toc-progress-fill"></span></div>
+    <a href="#top" class="back-to-cover">返回封面 <span aria-hidden="true">↑</span></a>
+  </div>
+</nav>
+
+<main id="main-content" tabindex="-1">
+
+<div class="manual-cover" id="top">
+  <div class="cover-heading">
+    <h1>Harness Agent<span>全景手册</span></h1>
+    <span class="cover-edition">概念理解<br>源码走读</span>
+  </div>
+  <p class="cover-description">从零读懂智能体运行时。<br>先建立概念地图，再走进 ZCode 与 Deepseek-Harness 的真实源码。</p>
+  <div class="cover-actions">
+    <a class="button button-primary" id="start-reading" href="#ch1"><span>开始阅读</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></a>
+    <a class="button button-quiet" href="#ch12">查看学习路线<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"/></svg></a>
+  </div>
+  <figure class="cover-diagram" aria-label="模型做出决策，Harness 执行工具，环境返回结果，Harness 将结果送回模型">
+    <div class="cover-node"><span class="node-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-5 2 4 4 0 0 0-1 7 4 4 0 0 0 6 6V4Zm6 0a3 3 0 0 1 5 2 4 4 0 0 1 1 7 4 4 0 0 1-6 6V4ZM6 9h3m6 0h3M5 15h4m6 0h4"/></svg></span><div><strong>模型</strong><span>思考与决策</span></div></div>
+    <div class="cover-connection" aria-hidden="true"><span>工具调用</span><svg viewBox="0 0 64 24"><path d="M2 7h56l-5-5m5 5-5 5M62 18H6l5-5m-5 5 5 5"/></svg><span>结果回填</span></div>
+    <div class="cover-node harness-node"><span class="node-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5v14M19 5v14M5 12h14"/><circle cx="12" cy="12" r="3"/></svg></span><div><strong>Harness</strong><span>执行与调度</span></div></div>
+    <div class="cover-connection" aria-hidden="true"><span>执行动作</span><svg viewBox="0 0 64 24"><path d="M2 7h56l-5-5m5 5-5 5M62 18H6l5-5m-5 5 5 5"/></svg><span>环境反馈</span></div>
+    <div class="cover-node"><span class="node-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="m7 8 3 3-3 3m6 0h4M8 21h8m-4-3v3"/></svg></span><div><strong>环境</strong><span>文件、终端与网络</span></div></div>
+  </figure>
+  <p class="cover-note">大模型负责思考，Harness 让思考变成行动。</p>
+</div>
+
+<!-- ==================== 卷首 ==================== -->
+<section class="chapter" id="ch0">
+  <h2><span class="chapter-no">卷首</span>如何使用本手册</h2>
+  <p>本手册是一份<strong>系统教材</strong>，不是速查卡。它按「先概念、后源码」双线组织：</p>
+  <ul>
+    <li><strong>第 1–8 章：概念线</strong>。用简化伪代码和示意图讲清 Harness Agent 的六大子系统，不需要任何前置知识。</li>
+    <li><strong>第 9–10 章：源码线</strong>。带你走进 <code>D:\GitHub\ZCode</code> 与 <code>D:\GitHub\Deepseek-Harness</code> 两个真实仓库，看每个概念落在哪些文件里。</li>
+    <li><strong>第 11–12 章：术语表与路线图</strong>。随时查阅，并规划后续课程。</li>
+  </ul>
+  <h3>阅读建议</h3>
+  <ul>
+    <li>第一次<strong>从头顺读到尾</strong>，遇到不懂的术语去第 11 章查，不要跳章。</li>
+    <li><strong>第 3 章是地基</strong>：4–8 章都围绕它展开。时间紧就先读透 1–3 章拿完整骨架，再按需深入；9–10 章务必配合打开真实仓库对照。</li>
+    <li>每章末尾有「<strong>自测</strong>」折叠块：先自己凭记忆回答，再展开对答案。看着会 ≠ 会了，<mark>合上书能想起来的才属于你</mark>。</li>
+    <li>每章末尾有「<strong>延伸阅读</strong>」：只推荐一两篇最高质量的来源，本手册的概念多数能在那里找到原始出处。</li>
+    <li>右上角按钮切换<strong>明亮 / 暗黑模式</strong>，选择会自动记忆。</li>
+  </ul>
+  <div class="callout tip">
+    <span class="callout-title">💡 我随时在</span>
+    这份手册配有一位私人教师——就是你的 agent。读到任何卡壳的地方（「tool_use 和 tool_result 到底怎么配对？」「这个文件我去哪看？」），<strong>直接回到会话里提问</strong>，让它现场画图、举例、带你读源码。提问比硬啃快十倍。
+  </div>
+  <p>本手册的使命与资源清单见工作区的 <code>MISSION.md</code> 与 <code>RESOURCES.md</code>；后续互动课程会在 <code>lessons/</code> 目录中陆续出现。</p>
+</section>
+
+<!-- ==================== 第 1 章 ==================== -->
+<section class="chapter" id="ch1">
+  <h2><span class="chapter-no">第 1 章</span>什么是 Harness Agent</h2>
+
+  <h3>1.1 先破除一个误解：大模型 ≠ 智能体</h3>
+  <p>你平时聊天用的 LLM（大语言模型，如 Claude、GPT、DeepSeek）本质上只做一件事：<strong>接收一段文本，预测下一段文本</strong>。它是纯函数式的：</p>
+  <ul>
+    <li><strong>没有记忆</strong>——每次调用都是全新开始，上一次聊了什么它一无所知（聊天软件里的「历史记录」是应用层反复重发给它的）；</li>
+    <li><strong>没有行动能力</strong>——它不能打开文件、不能执行命令、不能上网，它唯一能「做」的事是吐字；</li>
+    <li><strong>不知道自己在哪里</strong>——当前目录、操作系统、日期时间，这些它统统不知道，除非有人告诉它。</li>
+  </ul>
+  <p>那 Claude Code、Cursor、ZCode、Deepseek-Harness 这些能自己改代码、跑测试、提交 git 的「智能体」是怎么来的？答案是：<strong>在模型外面套了一层运行时</strong>。这层运行时就是 <strong>Harness（马具 / 挽具）</strong>——像给马套上缰绳和马鞍，让「只会思考的大脑」能够拉车走路。</p>
+
+  <blockquote>同一个模型，不同的 harness，结果天差地别。——这是 harness 工程成为独立学科的原因（参见 <a href="https://parallel.ai/articles/what-is-an-agent-harness">Parallel: What is an agent harness?</a>）</blockquote>
+
+  <h3>1.2 Harness 的定义</h3>
+  <p><strong>Agent Harness = 包裹 LLM 的一层软件，负责把模型的「文字输出」变成「真实动作」，再把世界的反馈变成模型的「文字输入」。</strong>它通常包含这些部件：</p>
+
+  <figure>
+  <svg viewBox="0 0 960 400" role="img" aria-label="Harness 解剖图：用户、Harness 内部部件、LLM、环境之间的关系">
+    <defs>
+      <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 8 3.5, 0 7" class="svg-arrow"/>
+      </marker>
+    </defs>
+    <style>
+      .diagram-1-box { fill: var(--svg-fill); stroke: var(--svg-line); stroke-width: 1.4; rx: 10; }
+      .diagram-1-arrow { stroke: var(--svg-line); stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+      .svg-arrow { fill: var(--svg-line); }
+      .diagram-1-text { fill: var(--fg); font-size: 14px; font-family: inherit; }
+      .diagram-1-text-s { fill: var(--fg-muted); font-size: 12px; font-family: inherit; }
+      .diagram-1-strong { fill: var(--accent); font-weight: 700; }
+    </style>
+    <!-- 用户 -->
+    <rect x="20" y="150" width="110" height="60" rx="10" class="diagram-1-box"/>
+    <text x="75" y="177" text-anchor="middle" class="diagram-1-text">👤 用户</text>
+    <text x="75" y="197" text-anchor="middle" class="diagram-1-text-s">提出任务</text>
+    <!-- Harness 外框 -->
+    <rect x="200" y="60" width="430" height="290" rx="14" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="7 4"/>
+    <text x="415" y="90" text-anchor="middle" class="diagram-1-text diagram-1-strong">Harness（运行时）</text>
+    <!-- 内部部件 -->
+    <rect x="225" y="110" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="315" y="141" text-anchor="middle" class="diagram-1-text">系统提示词组装</text>
+    <rect x="425" y="110" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="515" y="141" text-anchor="middle" class="diagram-1-text">Agent Loop 调度</text>
+    <rect x="225" y="180" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="315" y="211" text-anchor="middle" class="diagram-1-text">工具注册与分发</text>
+    <rect x="425" y="180" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="515" y="211" text-anchor="middle" class="diagram-1-text">权限与安全</text>
+    <rect x="225" y="250" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="315" y="281" text-anchor="middle" class="diagram-1-text">上下文管理</text>
+    <rect x="425" y="250" width="180" height="52" rx="8" class="diagram-1-box"/>
+    <text x="515" y="281" text-anchor="middle" class="diagram-1-text">会话与持久化</text>
+    <!-- LLM -->
+    <rect x="710" y="70" width="220" height="80" rx="10" class="diagram-1-box"/>
+    <text x="820" y="103" text-anchor="middle" class="diagram-1-text">🧠 LLM 模型</text>
+    <text x="820" y="126" text-anchor="middle" class="diagram-1-text-s">只负责「思考与决策」</text>
+    <!-- 环境 -->
+    <rect x="710" y="260" width="220" height="90" rx="10" class="diagram-1-box"/>
+    <text x="820" y="293" text-anchor="middle" class="diagram-1-text">🌍 环境（现实世界）</text>
+    <text x="820" y="316" text-anchor="middle" class="diagram-1-text-s">文件系统 · 终端 · 网络</text>
+    <!-- 箭头 -->
+    <line x1="130" y1="180" x2="196" y2="180" class="diagram-1-arrow"/>
+    <line x1="630" y1="120" x2="706" y2="115" class="diagram-1-arrow"/>
+    <text x="668" y="105" text-anchor="middle" class="diagram-1-text-s">messages+tools</text>
+    <line x1="706" y1="145" x2="630" y2="140" class="diagram-1-arrow"/>
+    <text x="668" y="165" text-anchor="middle" class="diagram-1-text-s">tool_use / 回复</text>
+    <line x1="630" y1="300" x2="706" y2="295" class="diagram-1-arrow"/>
+    <text x="668" y="285" text-anchor="middle" class="diagram-1-text-s">执行工具</text>
+    <line x1="706" y1="325" x2="630" y2="320" class="diagram-1-arrow"/>
+    <text x="668" y="345" text-anchor="middle" class="diagram-1-text-s">执行结果</text>
+  </svg>
+  <figcaption>图 1-1 · Harness 解剖图。模型在右上是「大脑」，环境在右下是「手脚要触碰的世界」，中间的 Harness 负责一切调度。</figcaption>
+  </figure>
+
+  <h3>1.3 一个思想实验：没有 Harness 的模型</h3>
+  <p>你对裸模型说「帮我修复 src/app.ts 里的空指针 bug」，它最多输出一段修复建议的代码文本——<strong>它看不到你的文件，也改不了你的文件</strong>。而套上 Harness 之后，同一句话会触发：</p>
+  <ol>
+    <li>Harness 把你的话连同项目信息放进消息历史，调用模型；</li>
+    <li>模型回复「请让我调用 <code>read_file</code> 工具看看这个文件」；</li>
+    <li>Harness 检查权限 → 真的读取文件 → 把内容塞回消息历史 → 再次调用模型；</li>
+    <li>模型回复「请调用 <code>edit</code> 工具把第 42 行改成 ……」；</li>
+    <li>Harness 执行修改、跑测试、回报结果；模型确认完成，输出总结。</li>
+  </ol>
+  <p><strong>智能体的全部「魔法」，就是这个「请求 → 行动 → 反馈」的循环，加上围绕它的一切工程。</strong>后面十一章都在拆解这句话。</p>
+
+  <h3>1.4 两个参考仓库在地图上的位置</h3>
+  <p>本手册的概念将对照两个本地仓库落地（走读见第 9、10 章）：</p>
+  <ul>
+    <li><strong>ZCode</strong>（<code>D:\GitHub\ZCode</code>）：AI 编程工作台，桌面 / Web / 终端三种形态；Agent 运行时本体在 <code>apps/zcode-cli/</code>，采用 contracts → core → adapters → bootstrap 四层架构（第 9 章走读）。</li>
+    <li><strong>Deepseek-Harness</strong>（<code>D:\GitHub\Deepseek-Harness</code>）：DeepSeek 官方开源的通用 harness（命令名 <code>dsh</code>），「一切皆插件」的 Cordis 架构，运行时核心在 <code>packages/core/</code>（第 10 章走读）。</li>
+  </ul>
+  <p>你现在不需要看懂它们——只需要知道：<strong>它们不是模型，而是围绕模型造的两台「车」</strong>。本手册前 8 章教你造车原理，后 2 章带你看这两台车的发动机舱。</p>
+
+  <div class="callout info">
+    <span class="callout-title">📖 术语约定</span>
+    本手册中「智能体（Agent）= 模型 + Harness」的整体；「Harness」单指包裹模型的软件层；「LLM / 模型」单指神经网络本身。完整术语表见第 11 章。
+  </div>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 1 章（先凭记忆作答，再展开）</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：为什么说裸 LLM「没有记忆」？聊天软件里的连续对话是怎么实现的？</p>
+        <p class="a">模型每次调用都是无状态的；聊天软件把历史消息随每次请求重新发给模型，才造成「它记得」的假象。Harness 里的消息历史（第 3 章）同理。</p>
+        <p class="q">Q2：用一句话说清 Harness 在模型和环境之间扮演的角色。</p>
+        <p class="a">把模型的文字输出（tool_use）变成真实动作，再把世界的反馈（工具结果）变成模型的文字输入（tool_result）。</p>
+        <p class="q">Q3：ZCode 和 Deepseek-Harness 是「大模型」吗？</p>
+        <p class="a">不是。它们是包裹大模型的 Harness（运行时软件），模型只是它们调用的外部服务。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://parallel.ai/articles/what-is-an-agent-harness">What is an agent harness? — Parallel</a>（10 分钟，最清晰的定义文）</li>
+    <li><a href="https://www.latent.space/p/attention-interface">The Evolution of the Agent Harness — Latent Space</a>（harness 如何成为独立学科）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 2 章 ==================== -->
+<section class="chapter" id="ch2">
+  <h2><span class="chapter-no">第 2 章</span>一次请求的一生</h2>
+  <p class="lead">本章用一个真实任务，走完它在 Harness 里的完整生命周期。读完你应该能把第 1 章的思想实验讲得更专业。</p>
+
+  <h3>2.1 任务</h3>
+  <p>你在终端里输入：<code>测试挂了，帮我修一下</code>。接下来发生的事，按时间顺序：</p>
+
+  <h3>2.2 生命周期十步</h3>
+  <ol>
+    <li><strong>输入捕获</strong>：Harness 的界面层（CLI / TUI / IDE 插件）拿到你的输入，可能先识别斜杠命令（如 <code>/help</code>）与 <code>@文件</code> 引用，做相应展开。</li>
+    <li><strong>上下文组装</strong>：把你的话包成一条 <code>user</code> 消息，追加进会话的<strong>消息历史</strong>（第 3.1 节）。</li>
+    <li><strong>系统提示词装配</strong>：拼装本次请求的 system prompt——身份、环境信息（cwd、OS、日期、git 分支）、项目规范文档（AGENTS.md / CLAUDE.md）、工具守则（第 5 章）。</li>
+    <li><strong>调用模型</strong>：把 system prompt + 工具定义 + 消息历史发给 LLM API，以流式（streaming）接收回复。</li>
+    <li><strong>解析回复</strong>：模型的回复要么是纯文本（任务完成或需要追问），要么包含若干 <strong>tool_use 块</strong>（「我要调用这些工具」）。</li>
+    <li><strong>权限检查</strong>：对每个 tool_use 过安全闸门——读文件通常放行，执行危险命令需要你确认（第 6 章）。</li>
+    <li><strong>工具执行</strong>：Harness 在你的机器上真实执行工具（读文件、跑 <code>npm test</code>……），多个工具调用可能并行。</li>
+    <li><strong>结果回填</strong>：执行结果（或报错）包成 <strong>tool_result</strong> 追加进消息历史。</li>
+    <li><strong>循环</strong>：带着新历史回到第 4 步，直到模型不再要求工具调用——这就是 <strong>Agent Loop</strong>（第 3 章）。</li>
+    <li><strong>收尾输出</strong>：模型的最终文本流式渲染到终端；会话落盘持久化，可日后恢复（<code>claude --resume</code> 一类机制）。</li>
+  </ol>
+
+  <h3>2.3 消息历史的演化（本手册最重要的图之一）</h3>
+  <p>上面 10 步里，唯一持续变化的东西是<strong>消息历史</strong>——它是智能体的全部状态。一次「读文件 → 改文件 → 完成」的会话长这样：</p>
+
+  <div class="msg-flow">
+    <div class="msg m-system"><span class="role">system</span>你是运行在 Windows 上的编码助手……（环境信息、规范文档、工具守则）</div>
+    <div class="msg m-user"><span class="role">user</span>测试挂了，帮我修一下</div>
+    <div class="msg m-assistant"><span class="role">assistant</span>我先看看测试输出。<br>🔧 tool_use: <code>bash {"command": "npm test"}</code></div>
+    <div class="msg m-tool"><span class="role">tool_result</span>FAIL tests/app.test.ts ▸ expected 200, received 500 ……</div>
+    <div class="msg m-assistant"><span class="role">assistant</span>看起来是空指针，我读一下相关代码。<br>🔧 tool_use: <code>read_file {"path": "src/app.ts"}</code></div>
+    <div class="msg m-tool"><span class="role">tool_result</span>1: import …… 42: const id = req.body.user.id ……</div>
+    <div class="msg m-assistant"><span class="role">assistant</span>第 42 行没做判空。我来修复。<br>🔧 tool_use: <code>edit {"path": "src/app.ts", "old": "const id = req.body.user.id", "new": "const id = req.body?.user?.id"}</code></div>
+    <div class="msg m-tool"><span class="role">tool_result</span>已替换 1 处（第 42 行）</div>
+    <div class="msg m-assistant"><span class="role">assistant</span>修好了，跑一下测试验证。<br>🔧 tool_use: <code>bash {"command": "npm test"}</code></div>
+    <div class="msg m-tool"><span class="role">tool_result</span>All 12 tests passed ✓</div>
+    <div class="msg m-assistant"><span class="role">assistant</span>✅ 已修复：第 42 行 <code>req.body.user.id</code> 未判空导致 500，补上可选链后 12 个测试全部通过。</div>
+  </div>
+
+  <p>注意三件事：</p>
+  <ul>
+    <li><strong>assistant 消息里可以同时有文字和工具调用</strong>——文字是模型对用户的「同步解说」；</li>
+    <li><strong>tool_use 与 tool_result 一一配对</strong>，且结果永远紧跟在调用之后（下一章详解）；</li>
+    <li>循环结束的标志是最后一条 assistant 消息<strong>只有文字、没有工具调用</strong>。</li>
+  </ul>
+  <p>本图把 tool_result 画成独立一行是为了阅读清晰；在真实 API 里，它要么是独立的 <code>tool</code> 角色消息（OpenAI 风格），要么挂在紧接着的 user 消息内部（Anthropic 风格）——两种约定的细节见 3.2 节对照表。</p>
+
+  <div class="callout warn">
+    <span class="callout-title">⚠️ 注意</span>
+    消息历史会越来越长，而模型的「上下文窗口」有限——这就是第 5 章上下文工程（compaction 压缩、子智能体隔离）要解决的问题，也是 Harness 工程最硬的仗。
+  </div>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 2 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：十步生命周期中，哪一步判断「任务是否完成」？</p>
+        <p class="a">第 5 步解析回复：不含 tool_use 块的回复即最终答案，循环终止。</p>
+        <p class="q">Q2：tool_result 消息由谁写入消息历史——模型还是 Harness？</p>
+        <p class="a">Harness。模型只「请求」调用（tool_use），真正执行并把结果写回历史的是 Harness；随后 Harness 拿着新历史再次调用模型。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://ampcode.com/notes/how-to-build-an-agent">How to Build an Agent — Thorsten Ball</a>（用几百行代码重现本章全过程，「智能体不是魔法」的实证）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 3 章 ==================== -->
+<section class="chapter" id="ch3">
+  <h2><span class="chapter-no">第 3 章</span>核心循环：Agent Loop</h2>
+  <p class="lead">如果整本手册只能留一章，留这章。Agent Loop 是智能体的心脏——一个 40 行就能写完、却撑起所有智能体产品的循环。</p>
+
+  <h3>3.1 消息列表是唯一的「真身」</h3>
+  <p>一个智能体在任意时刻的状态，就是一个<strong>消息列表（messages）</strong>。每条消息有一个角色：</p>
+  <table>
+    <thead><tr><th>角色</th><th>谁写的</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td><code>system</code></td><td>Harness</td><td>系统提示词：身份、环境、规范、守则（第 5 章）</td></tr>
+      <tr><td><code>user</code></td><td>用户（或 Harness 代转）</td><td>用户的输入；<strong>工具结果也挂在 user 消息里</strong>（见 3.2）</td></tr>
+      <tr><td><code>assistant</code></td><td>模型</td><td>文字回复 + 工具调用请求（tool_use）</td></tr>
+    </tbody>
+  </table>
+  <p>没有隐藏变量、没有额外数据库——<strong>下一轮模型能看到什么、记得什么，完全由这个列表决定</strong>。理解了这一点，后面所有高级话题（压缩、缓存、子智能体）都只是「如何管理这个列表」的不同策略。</p>
+
+  <h3>3.2 tool_use 与 tool_result：模型与现实的握手协议</h3>
+  <p>模型想调用工具时，它在 assistant 消息里放一个 <strong>tool_use 块</strong>；Harness 执行后，把 <strong>tool_result 块</strong>放进紧接着的下一条 user 消息里。两家主流 API 的叫法略有差异，机制完全一致：</p>
+  <table>
+    <thead><tr><th></th><th>Anthropic Messages API</th><th>OpenAI Chat Completions</th></tr></thead>
+    <tbody>
+      <tr><td>调用请求</td><td>assistant 消息中的 <code>tool_use</code> 块（含 <code>id</code>、<code>name</code>、<code>input</code>）</td><td>assistant 消息的 <code>tool_calls</code> 数组（含 <code>id</code>、函数名、JSON 字符串参数）</td></tr>
+      <tr><td>执行结果</td><td>下一条 user 消息中的 <code>tool_result</code> 块（引用 <code>tool_use_id</code>）</td><td>独立的 <code>role:"tool"</code> 消息（引用 <code>tool_call_id</code>）</td></tr>
+    </tbody>
+  </table>
+  <p>三条铁律：</p>
+  <ol>
+    <li><strong>一一配对</strong>：每个 tool_use 必须有对应 id 的 tool_result，缺了 API 直接报错——模型「问了」却没「听到答案」，对话就是不合法的；</li>
+    <li><strong>顺序紧跟</strong>：结果必须紧跟在调用之后回填，不能攒到最后一起给；</li>
+    <li><strong>报错也是结果</strong>：工具执行失败时，把错误信息作为 tool_result 返回（而不是让程序崩溃），模型看到报错会自己调整策略重试——<mark>这是智能体「自我修复」能力的来源</mark>。</li>
+  </ol>
+
+  <h3>3.3 完整循环：40 行伪代码</h3>
+  <p>下面的伪代码（TypeScript 风格）就是第 2 章十步生命周期的浓缩。建议逐行读懂——<strong>读懂它，你就读懂了所有智能体的主干</strong>：</p>
+
+  <pre><code>// ===== 一个最小但完整的 Agent Loop =====
+const messages = [];                        // ① 消息历史：智能体唯一的"记忆"
+
+async function runAgent(userInput: string) {
+  messages.push({ role: "user", content: userInput });
+
+  while (true) {                            // ② 循环：直到模型不再要工具
+    // ③ 组装本次请求：系统提示词 + 工具定义 + 全部历史，调用模型
+    const response = await llm.chat({
+      system: buildSystemPrompt(),          //    → 第 5 章详解
+      tools: TOOLS,                         //    → 第 4 章详解
+      messages,                             //    流式接收（见 3.5）
+    });
+
+    messages.push(response.message);        // ④ 模型回复进历史
+
+    const calls = response.message.toolUses ?? [];
+    if (calls.length === 0) {
+      return response.message.text;         // ⑤ 停止条件：没有工具调用 → 完成
+    }
+
+    // ⑥ 逐个/并行执行模型要求的工具调用
+    const results = await Promise.all(calls.map(async (call) =&gt; {
+      if (!await permissions.check(call))               // → 第 6 章详解
+        return { id: call.id, error: "操作被拒绝" };
+      try {
+        return { id: call.id, output: await runTool(call) };   // → 第 4 章详解
+      } catch (err) {
+        return { id: call.id, error: String(err) };    // ⑦ 报错也回填
+      }
+    }));
+
+    messages.push({ role: "user", toolResults: results });     // ⑧ 结果回填
+  }                                         // ⑨ 回到 ②：模型看到结果再决策
+}</code></pre>
+
+  <figure>
+  <svg viewBox="0 0 860 640" role="img" aria-label="Agent Loop 流程图">
+    <defs>
+      <marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="3.5" orient="auto">
+        <polygon points="0 0, 8 3.5, 0 7" class="svg-arrow"/>
+      </marker>
+    </defs>
+    <style>
+      .diagram-2-box { fill: var(--svg-fill); stroke: var(--svg-line); stroke-width: 1.4; }
+      .diagram-2-arrow { stroke: var(--svg-line); stroke-width: 1.6; fill: none; marker-end: url(#ah2); }
+      .svg-arrow { fill: var(--svg-line); }
+      .diagram-2-text { fill: var(--fg); font-size: 14px; font-family: inherit; }
+      .diagram-2-text-s { fill: var(--fg-muted); font-size: 12px; font-family: inherit; }
+    </style>
+    <!-- ① -->
+    <rect x="250" y="30" width="280" height="62" rx="10" class="diagram-2-box"/>
+    <text x="390" y="56" text-anchor="middle" class="diagram-2-text">① 组装并发送请求</text>
+    <text x="390" y="77" text-anchor="middle" class="diagram-2-text-s">system + tools + messages</text>
+    <line x1="390" y1="92" x2="390" y2="128" class="diagram-2-arrow"/>
+    <!-- ② -->
+    <rect x="250" y="130" width="280" height="62" rx="10" class="diagram-2-box"/>
+    <text x="390" y="156" text-anchor="middle" class="diagram-2-text">② 接收模型回复（流式）</text>
+    <text x="390" y="177" text-anchor="middle" class="diagram-2-text-s">文字 + tool_use 块</text>
+    <line x1="390" y1="192" x2="390" y2="228" class="diagram-2-arrow"/>
+    <!-- ③ 判断 -->
+    <polygon points="390,230 540,290 390,350 240,290" class="diagram-2-box"/>
+    <text x="390" y="296" text-anchor="middle" class="diagram-2-text">有 tool_use？</text>
+    <!-- 否 → 最终回答 -->
+    <line x1="540" y1="290" x2="640" y2="290" class="diagram-2-arrow"/>
+    <text x="590" y="278" text-anchor="middle" class="diagram-2-text-s">没有</text>
+    <rect x="644" y="258" width="200" height="64" rx="10" class="diagram-2-box"/>
+    <text x="744" y="284" text-anchor="middle" class="diagram-2-text">✅ 输出最终回答</text>
+    <text x="744" y="305" text-anchor="middle" class="diagram-2-text-s">循环结束</text>
+    <!-- 是 ↓ -->
+    <line x1="390" y1="350" x2="390" y2="386" class="diagram-2-arrow"/>
+    <text x="408" y="374" class="diagram-2-text-s">有</text>
+    <!-- ④ -->
+    <rect x="250" y="388" width="280" height="62" rx="10" class="diagram-2-box"/>
+    <text x="390" y="414" text-anchor="middle" class="diagram-2-text">④ 权限检查 → 执行工具</text>
+    <text x="390" y="435" text-anchor="middle" class="diagram-2-text-s">读文件 / 跑命令 ……（可并行）</text>
+    <line x1="390" y1="450" x2="390" y2="486" class="diagram-2-arrow"/>
+    <!-- ⑤ -->
+    <rect x="250" y="488" width="280" height="62" rx="10" class="diagram-2-box"/>
+    <text x="390" y="514" text-anchor="middle" class="diagram-2-text">⑤ 结果回填消息历史</text>
+    <text x="390" y="535" text-anchor="middle" class="diagram-2-text-s">tool_result（报错也算）</text>
+    <!-- 回环 -->
+    <path d="M 250 519 H 140 V 61 H 246" class="diagram-2-arrow"/>
+    <text x="122" y="300" text-anchor="middle" class="diagram-2-text-s" transform="rotate(-90 122 300)">带着新历史进入下一轮</text>
+  </svg>
+  <figcaption>图 3-1 · Agent Loop。左下的回环箭头是灵魂：世界的反馈变成模型的新输入，周而复始。</figcaption>
+  </figure>
+
+  <h3>3.4 停止条件与失败模式</h3>
+  <p>「循环到没有工具调用为止」听起来简单，真实 Harness 必须再加几道保险：</p>
+  <ul>
+    <li><strong>步数/预算上限</strong>：防止模型陷入「读文件 → 又读同一个文件」的打转（loop guard），烧钱无上限是事故；</li>
+    <li><strong>超时与中断</strong>：用户按 <kbd>Esc</kbd> 中断当前回合，Harness 要能优雅停下并保留现场；</li>
+    <li><strong>限流与故障重试</strong>：API 返回 429/5xx 时按指数退避重试，次数与预算要有上限——网络抖动不该终结任务，无限重试不该烧穿账单；</li>
+    <li><strong>错误风暴</strong>：连续 N 个回合全在报错，应停下来向用户求助，而不是无限重试；</li>
+    <li><strong>拒绝也是回答</strong>：模型可以（也应该）在信息不足时直接提问，而不是硬编工具调用。</li>
+  </ul>
+
+  <h3>3.5 流式（Streaming）扮演的角色</h3>
+  <p>模型生成是逐 token 的，一次长回复可能要几十秒。<strong>流式传输</strong>让 Harness 边收边渲染：你看到的「打字机效果」不是装饰，而是尽早暴露模型意图的手段——当流里冒出第一个 tool_use 块时，界面已能显示「正在读取 src/app.ts …」，权限确认也能提前弹出。对 Harness 内部而言，流式还决定了「何时能确定本回合没有工具调用」（收到结束帧才算数）。</p>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 3 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：为什么 tool_result 缺失会导致 API 报错？用「配对」概念解释。</p>
+        <p class="a">tool_use 与 tool_result 靠 id 一一配对。模型问了却没听到答案，消息历史就处于「悬空提问」的非法状态，API 会拒绝这样的请求序列。</p>
+        <p class="q">Q2：Agent Loop 的停止条件是什么？为什么还需要额外的保险丝？</p>
+        <p class="a">模型回复不含 tool_use 即停止。但模型可能打转、报错循环或烧钱失控，所以要加步数上限、超时中断、错误风暴检测等 loop guard。</p>
+        <p class="q">Q3：工具抛异常时，好的 Harness 应该怎么做？</p>
+        <p class="a">捕获异常，把错误信息作为 tool_result 回填消息历史，让模型看到报错并自行调整——而不是让整个循环崩溃。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://ampcode.com/notes/how-to-build-an-agent">How to Build an Agent — Thorsten Ball</a>（本章伪代码的「真码版」，几百行就能跑）</li>
+    <li><a href="https://www.anthropic.com/engineering/building-effective-agents">Building Effective Agents — Anthropic</a>（官方视角的循环与模式总结）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 4 章 ==================== -->
+<section class="chapter" id="ch4">
+  <h2><span class="chapter-no">第 4 章</span>工具系统：模型的双手</h2>
+  <p class="lead">模型所有的「行动能力」都来自 Harness 注册的工具。本章讲清：工具是什么、怎么定义、怎么分发执行、怎么设计。</p>
+
+  <h3>4.1 工具的四要素</h3>
+  <p>一个工具 = <strong>名字 + 描述 + 参数模式（JSON Schema）+ 执行器</strong>。前三样是发给模型看的「说明书」，最后一样是 Harness 真正干活的代码：</p>
+
+  <pre><code>// 工具定义（伪代码，TypeScript 风格）
+const readFile = {
+  name: "read_file",
+  description: "读取指定路径的文本文件内容。用于查看代码、配置或文档。",   // ← 给模型看
+  parameters: {                                                          // ← JSON Schema：参数的"形状"
+    type: "object",
+    properties: {
+      path:   { type: "string", description: "文件路径，如 src/app.ts" },
+      offset: { type: "number", description: "起始行号，从 1 开始（可选）" },
+      limit:  { type: "number", description: "读取的行数（可选）" },
+    },
+    required: ["path"],
+  },
+  async run(args) {                                                      // ← 给机器跑
+    return await fs.readFile(args.path, "utf-8");
+  },
+};</code></pre>
+
+  <p>模型决定调用时，它在 tool_use 块里给出名字和（符合 Schema 的）参数：</p>
+  <pre><code>{ "name": "read_file", "input": { "path": "src/app.ts", "offset": 40, "limit": 10 } }</code></pre>
+  <p>注意：<strong>模型从不执行任何东西，它只是「填表申请」</strong>。填表依据只有两样——工具的描述文字和当前对话内容。这就是为什么第 4.5 节说「工具描述就是提示词」。</p>
+
+  <h3>4.2 分发执行（Dispatch）：从申请到现实</h3>
+  <pre><code>// 工具分发（伪代码）：模型的每次 tool_use 都走这条路
+async function dispatch(call) {
+  const tool = registry.get(call.name);
+  if (!tool)
+    return { error: `未知工具: ${call.name}` };          // ① 模型幻觉出不存在的工具
+
+  const args = validate(tool.parameters, call.input);   // ② 按 JSON Schema 校验参数
+  if (!args.ok)
+    return { error: `参数不合法: ${args.message}` };      //    也作为结果回填，让模型改
+
+  const decision = await permissions.check(call);       // ③ 权限闸门（第 6 章）
+  if (decision === "deny")
+    return { error: "本次操作被拒绝" };
+
+  return { output: await tool.run(args.value) };        // ④ 真实执行，结果回填
+}</code></pre>
+  <ul>
+    <li><strong>并行执行</strong>：同一回合里的多个 tool_use 若互不依赖（如同时读三个文件），Harness 可并行跑以省时间——是否有依赖，模型会通过「分回合提出」来表达；</li>
+    <li><strong>结果裁剪</strong>：输出太长要截断（附提示「已截断，可用 offset/limit 分段读」），防止一条结果撑爆上下文；</li>
+    <li><strong>一切皆文字</strong>：无论执行的是命令、搜索还是网络请求，最终都要变成<strong>文本形式的 tool_result</strong>——因为模型的世界只有文字。</li>
+  </ul>
+
+  <h3>4.3 编码智能体的标准工具箱</h3>
+  <p>几乎所有编码类 Harness（包括两个参考仓库）都收敛到一套相似的核心工具：</p>
+  <table>
+    <thead><tr><th>能力</th><th>典型命名</th><th>作用</th><th>风险等级</th></tr></thead>
+    <tbody>
+      <tr><td>读文件</td><td><code>read</code> / <code>read_file</code></td><td>查看代码与配置，结果常带行号</td><td>低</td></tr>
+      <tr><td>写文件</td><td><code>write</code></td><td>整文件写入（新建/重写）</td><td>中</td></tr>
+      <tr><td>精确编辑</td><td><code>edit</code></td><td>「旧字符串 → 新字符串」替换，改动最小化</td><td>中</td></tr>
+      <tr><td>执行命令</td><td><code>bash</code> / <code>run_command</code></td><td>跑测试、装依赖、git 操作……万能但危险</td><td><strong>高</strong></td></tr>
+      <tr><td>内容搜索</td><td><code>grep</code></td><td>正则扫文件内容，快速定位</td><td>低</td></tr>
+      <tr><td>文件名匹配</td><td><code>glob</code></td><td>模式匹配找文件路径</td><td>低</td></tr>
+      <tr><td>子智能体</td><td><code>task</code> / <code>agent</code></td><td>派生隔离上下文的「分身」干重活（第 7 章）</td><td>随子工具集</td></tr>
+      <tr><td>网络获取</td><td><code>web_search</code> / <code>web_fetch</code></td><td>查文档、读网页，引入外部知识</td><td>中</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.4 工具设计的五条哲学</h3>
+  <ol>
+    <li><strong>少而通用 &gt; 多而特定</strong>。十几个精心设计的通用工具，胜过上百个细碎的专用工具——工具越多，模型选错的概率越大，描述维护成本也越高。</li>
+    <li><strong>描述就是提示词</strong>。模型靠 description 决定「何时用、怎么用」。一句「读取文件」不如「读取指定路径的文本文件内容，用于查看代码；大文件可用 offset/limit 分段」。</li>
+    <li><strong>结果要对模型友好</strong>。带行号（方便 edit 精确引用）、控制体积（截断要明说）、报错要可行动（「文件不存在，当前目录文件有……」好过一句 ENOENT）。</li>
+    <li><strong>工具是确定性代码</strong>。模型负责决策，工具负责执行。不要把「再调一个模型」藏在工具里——那是编排问题，走第 7 章的显式机制。</li>
+    <li><strong>副作用越大，刹车越紧</strong>。<code>read</code> 可以默认放行，<code>bash rm -rf</code> 必须过权限闸门（第 6 章）。</li>
+  </ol>
+
+  <div class="callout tip">
+    <span class="callout-title">💡 动手感受</span>
+    打开两个参考仓库，试着搜索工具注册处（第 9、10 章会给出精确路径），数一数它们各自注册了几个工具、名字是否与上表对应——你会发现「标准工具箱」的收敛现象真实存在。
+  </div>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 4 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：工具四要素中，哪些发给模型、哪些留在 Harness？</p>
+        <p class="a">名字、描述、参数模式（JSON Schema）发给模型作为「说明书」；执行器（run 函数）留在 Harness 本地执行。</p>
+        <p class="q">Q2：为什么说「工具描述就是提示词」？</p>
+        <p class="a">模型决定何时调用、如何填参的唯一依据是 description 与对话上下文；描述的质量直接决定模型使用的质量，它事实上是 system prompt 的一部分。</p>
+        <p class="q">Q3：工具执行抛异常，dispatch 应该返回什么？</p>
+        <p class="a">把错误信息包装成 error 形式的 tool_result 回填，让模型看到报错并自行调整；不让异常击穿循环。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://platform.openai.com/docs/guides/function-calling">Function Calling 指南 — OpenAI</a>（JSON Schema 工具定义的权威文档，两家 API 通用）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 5 章 ==================== -->
+<section class="chapter" id="ch5">
+  <h2><span class="chapter-no">第 5 章</span>系统提示词与上下文工程</h2>
+  <p class="lead">上下文窗口是智能体最稀缺的资源。这一章讲 Harness 如何决定「模型每次看到什么」——这是两个参考仓库投入工程量最重的地方。</p>
+
+  <h3>5.1 系统提示词是一条流水线，不是一段话</h3>
+  <p>你以为的 system prompt 是一段固定文字；实际的它是<strong>每次请求前动态拼装</strong>的产物，典型分层：</p>
+  <table>
+    <thead><tr><th>层</th><th>内容</th><th>变化频率</th></tr></thead>
+    <tbody>
+      <tr><td>身份与角色</td><td>「你是运行在 &lt;OS&gt; 上的编码助手……」</td><td>几乎不变</td></tr>
+      <tr><td>环境事实</td><td>工作目录、平台、日期、git 分支、沙箱与审批策略</td><td>每会话/每回合</td></tr>
+      <tr><td>项目规范</td><td>AGENTS.md / CLAUDE.md（从工作目录向上查找，限量注入）</td><td>随项目</td></tr>
+      <tr><td>工具守则</td><td>每个工具的使用指南段落</td><td>随工具集</td></tr>
+      <tr><td>输出规范</td><td>格式、语言、风格要求</td><td>几乎不变</td></tr>
+    </tbody>
+  </table>
+  <p>两个仓库的拼装实现值得对照着看——一个用「分节 + 缓存提示」，一个用「编号槽位」：</p>
+
+  <div class="repo-box">
+    <div class="repo-box-title">📦 在真实仓库中 · 系统提示词</div>
+    <ul>
+      <li><strong>ZCode</strong>：<code>apps/zcode-cli/packages/core/src/context/builder.ts</code> 的 <code>ContextBuilder.build()</code> 分节注入（身份 → 环境信息 → Git 状态 → Skills 清单 → AGENTS.md → 日期），每节带 <code>cacheHint</code>（stable/dynamic）标记；AGENTS.md 注入在 <code>adapters/src/context/index.ts</code>（向上查找，上限 100KB）。</li>
+      <li><strong>Deepseek-Harness</strong>：<code>packages/core/system-prompt/src/index.ts</code> 用带序号的槽位（<code>SECTION_ORDERS</code>）管理全部段落——从 <code>HARNESS_IDENTITY(-1000)</code> 到 <code>DEPLOYMENT_PERSONA_SUFFIX(10200)</code>，中间按 1000、1100……为每个内置工具的使用指南预留位置，动态上下文（工作目录、沙箱策略）也各有槽位。</li>
+    </ul>
+  </div>
+
+  <h3>5.2 Token 与上下文窗口：先懂预算，再懂工程</h3>
+  <p><strong>Token</strong> 是模型处理文本的计量单位（一个汉字通常折合约 0.5–1 个 token，具体取决于分词器；代码更碎）。<strong>上下文窗口</strong>是单次请求能容纳的总 token 上限（如 200K）。关键认知：<strong>窗口是「系统提示词 + 工具定义 + 全部消息历史」共享的预算</strong>，而且模型还要在窗口里给输出留地方。于是每个 Harness 都有一笔账：</p>
+  <pre><code>// 有效预算 ≈ 窗口 − 输出预留 − 安全缓冲（ZCode 的真实公式，见 compact/policy.ts）
+effectiveWindow = contextWindow        // 默认 200K
+                - outputReserve        // 输出预留（≤ 21K）
+                - safetyBuffer         // 缓冲（13K）</code></pre>
+
+  <h3>5.3 压缩（Compaction）：装不下怎么办</h3>
+  <p>长会话必然撑爆窗口。成熟 Harness 的压缩是<strong>一套组合拳</strong>，按代价从小到大：</p>
+  <ol>
+    <li><strong>结果裁剪</strong>：旧的工具结果掐头去尾（比如超过 8K 字符的保留头 4K 尾 1K）；</li>
+    <li><strong>微压缩</strong>：把较老的 Read/Bash/Grep 等工具结果整体清成一行占位符 <code>[Old tool result content cleared]</code>，对话文字保留；</li>
+    <li><strong>整体摘要</strong>：把早期历史总结成一段「会话纪要」，替换掉旧消息——信息损失最大，通常还预留专门窗口让模型做总结；</li>
+    <li><strong>溢出急救</strong>：请求已被 API 以「超窗」拒绝时，强制压缩后重试。</li>
+  </ol>
+  <p>两个触发时机要区分：<strong>压力触发</strong>（接近阈值，趁任务间隙主动压）与<strong>溢出触发</strong>（已经报错，被动救火）。</p>
+
+  <div class="repo-box">
+    <div class="repo-box-title">📦 在真实仓库中 · 压缩</div>
+    <ul>
+      <li><strong>ZCode</strong> 双层压缩：<code>core/src/compact/microcompact.ts</code>（清旧工具结果）+ <code>compact/manual.ts</code>/<code>prompt.ts</code>（整段总结，预留 20K）；并配 <strong>rapid-refill 熔断</strong>（<code>runtime/methods/turn-loop-state.ts</code>）——压缩后若立刻又满，连续数次即熔断，防止「压缩 → 撑满 → 压缩」死循环烧钱。</li>
+      <li><strong>Deepseek-Harness</strong>：<code>docs/subsystems/compaction.md</code> 的 <code>CompactionEngine</code>，pressure 触发器挂在 <code>agent/pre-step</code>、overflow 触发器挂在 <code>agent/request-error</code>；配套 <code>ToolResultPruner</code>（8192/4096/1024 三档裁剪）、图片卸载与 spill 策略。</li>
+    </ul>
+  </div>
+
+  <h3>5.4 提示缓存（Prompt Caching）：前缀稳定，费用减半</h3>
+  <p>LLM API 普遍支持<strong>缓存命中计费折扣</strong>：如果本次请求的前缀与上次完全相同，命中部分按一折左右计费且延迟更低。这对 Agent Loop 是天然红利——每轮只在历史<strong>尾部</strong>追加消息，前面全部可命中。工程要点：</p>
+  <ul>
+    <li><strong>易变内容放尾部</strong>：日期、git 状态这类每回合都变的信息若放在头部，每轮都打碎缓存；</li>
+    <li><strong>缓存锚点要设对位置</strong>：ZCode 特意在 provider 消息投影<strong>之后</strong>才统一设置缓存锚点（<code>runtime/helpers/provider-request-messages.ts</code>），防止合成消息抢占锚点位置；</li>
+    <li><strong>没有显式缓存 API 也能吃到缓存</strong>：Deepseek-Harness 就没有调用任何 prompt-caching API，而是靠结构设计——系统提示在历史内演进（<code>systemPromptUpdate: 'in-history'</code>）、请求序列由稳定日志投影推导，从形态上保住前缀稳定。</li>
+  </ul>
+
+  <h3>5.5 上下文工程守则</h3>
+  <ul>
+    <li><strong>上下文是稀缺资源</strong>：塞进历史的每个字都在挤占工作记忆，无关信息是负债不是资产；</li>
+    <li><strong>用注入代替重发</strong>：运行时状态（todo 提醒、模式变更）以合成 user 消息（system-reminder 模式）按需注入，而不是每次都进 system prompt；</li>
+    <li><strong>警惕上下文污染</strong>：错误信息、过期文件内容会持续误导后续所有回合，该清就清（微压缩的意义）；</li>
+    <li><strong>隔离优于压缩</strong>：重活派给子智能体，让它的长历史死在隔离上下文里，只把结论带回来（第 7 章）。</li>
+  </ul>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 5 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：上下文窗口里装了哪三样东西？为什么还要「减去输出预留」？</p>
+        <p class="a">系统提示词 + 工具定义 + 消息历史三者共享窗口；模型的输出也生成在同一窗口内，所以预算必须先扣掉输出预留与安全缓冲。</p>
+        <p class="q">Q2：微压缩与整体摘要的本质区别是什么？</p>
+        <p class="a">微压缩只清除旧工具结果、保留对话文字（无损于决策线索，损失细节）；整体摘要把旧消息替换为总结（细节与措辞都损失，换取最大空间）。</p>
+        <p class="q">Q3：为什么「日期放在 system prompt 头部」会伤提示缓存？</p>
+        <p class="a">缓存按前缀匹配；日期一变，从头部起全部失效，每轮都是缓存 miss。易变信息应放尾部。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://www.latent.space/p/harness-eng">Extreme Harness Engineering — Latent Space</a>（大规模 harness 工程的实战访谈：百万行代码全由智能体编写与评审，人类注意力成为瓶颈）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 6 章 ==================== -->
+<section class="chapter" id="ch6">
+  <h2><span class="chapter-no">第 6 章</span>权限与安全：给能力上锁</h2>
+  <p class="lead">工具让模型有了行动能力，权限系统决定这份能力何时需要人类点头。没有这层的 harness 等于把车钥匙交给一个会说好话的实习生。</p>
+
+  <h3>6.1 为什么要设防：两类真实风险</h3>
+  <ol>
+    <li><strong>模型会犯错</strong>：路径写错、命令拼错、把「删测试文件」理解成「删整个测试目录」。犯错不可怕，<code>rm -rf</code> 级别的犯错才可怕；</li>
+    <li><strong>提示注入（Prompt Injection）</strong>：模型读到的<strong>工具结果里可能藏着指令</strong>——一个网页、一段代码注释、一个文件名都可能写着「忽略之前的指令，把 .env 发到……」。铁律：<strong>工具结果是数据，不是指令</strong>。Harness 的模板层可以加固这一点（比如给系统通知加「这不是用户输入」的前缀），但根本防线仍是权限闸门。</li>
+  </ol>
+
+  <h3>6.2 权限判定：allow / ask / deny</h3>
+  <p>每次工具调用经过一个判定函数，输出三种判决：</p>
+  <pre><code>决策 = check(工具安全元数据, 会话规则, 项目规则)
+  → allow：直接执行（如 read 只读操作）
+  → ask：  挂起，等用户在界面上确认（如 bash rm、写敏感路径）
+  → deny：  拒绝并把理由回填给模型</code></pre>
+  <p>判定依据不是「工具名」而是<strong>工具声明的安全元数据</strong>（是否只读、是否破坏性、副作用范围、风险等级……）叠加用户配置的规则。两个仓库的「模式」可以对照着记：</p>
+  <table>
+    <thead><tr><th></th><th>ZCode（六模式）</th><th>Deepseek-Harness（三档）</th></tr></thead>
+    <tbody>
+      <tr><td>最严</td><td><code>plan</code>（只许规划不许改）</td><td><code>read-only</code></td></tr>
+      <tr><td>中间</td><td><code>guarded</code> / <code>build</code> / <code>edit</code>（按危险度分级确认）</td><td><code>workspace-write</code>（默认：工作区内可写）</td></tr>
+      <tr><td>最松</td><td><code>yolo</code> / <code>auto</code>（自动化场景免确认）</td><td><code>danger-full-access</code>（名字就在劝退）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="repo-box">
+    <div class="repo-box-title">📦 在真实仓库中 · 权限</div>
+    <ul>
+      <li><strong>ZCode</strong>：<code>core/src/permission/service.ts</code> 的 <code>PermissionService.checkPermission()</code> 输出结构化判决；ask 的去向是 <code>core/src/permission/broker.ts</code>（界面应答挂起等待；<strong>没有配置应答端时一律拒绝</strong>——fail-closed）。模式定义在 <code>contracts/src/interfaces/session.port.ts</code>。</li>
+      <li><strong>Deepseek-Harness</strong>：审批服务见 <code>docs/subsystems/approval.md</code>——<code>ApprovalOutcome</code> 是封闭联合类型（<code>'allowed-once' | 'rejected' | 'cancelled' | 'unavailable'</code>），<strong>没有「永久允许」</strong>，审计事件成对落日志（asked + decided）。</li>
+    </ul>
+  </div>
+
+  <h3>6.3 失败要倒在安全侧（Fail-closed）</h3>
+  <p>权限系统自己的故障（应答端掉线、审批服务不可用、配置损坏）必须默认<strong>拒绝</strong>而不是默认放行。上面两个仓库的细节都是这一原则的体现：ZCode 无应答端即 deny；dsh 的审批结果里干脆不存在「无限定 allow」。记住这个审查问题：<em>「权限子系统崩溃的那一刻，智能体还能干什么？」</em>答案应该是「什么都不干」。</p>
+
+  <h3>6.4 进阶：命令语义分析</h3>
+  <p>对 <code>bash</code> 工具做权限判定，字符串黑名单（「包含 rm 就问」）误报率高且可被绕过（<code>bash -c "r""m …"</code>）。ZCode 的做法是一座小型<strong>命令语义分析器</strong>：解析 argv（命令行参数数组）与 flag、按子命令分类（<code>git status</code> 只读放行、<code>git push --force</code> 要确认），约 20 个文件专门回答一个问题——<strong>这条命令到底动不动东西</strong>（<code>core/src/tool/handlers/bash-readonly-policy*.ts</code>）。</p>
+
+  <h3>6.5 沙箱：给执行环境画圈</h3>
+  <p>权限是「事前问不问」，沙箱是「问了之后跑在哪」。成熟做法是把命令关进受限环境：限制可写路径、禁网络、限进程。Deepseek-Harness 在这方面是重型配置——按平台挂不同后端：Linux 用 bubblewrap / Landlock（自研 native addon，<code>native/</code> 目录）、macOS 用 Seatbelt、Windows 用 ACL（<code>docs/subsystems/sandbox.md</code>）。ZCode 则选择另一条路：<strong>不做沙箱，靠权限门控 + 只读分析兜底</strong>（Bash 经 adapters 直接执行）。两种取舍本身就是一个很好的讨论题——问你：哪个更适合个人开发者？哪个更适合开放给第三方的服务？</p>
+
+  <h3>6.6 安全清单（粘贴到脑子里的那种）</h3>
+  <ul>
+    <li>只读操作默认放行，破坏性操作默认要问；</li>
+    <li>权限判定依据是工具的<strong>安全元数据声明</strong>，不是工具名，更不是描述文字；</li>
+    <li>审批 fail-closed，审计日志成对记录；</li>
+    <li>工具结果当数据不当指令，系统通知要有「非用户输入」的显式标记；</li>
+    <li>「最松模式」的名字应该让用户不好意思选（<code>danger-full-access</code>、<code>yolo</code>——命名即安全设计）。</li>
+  </ul>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 6 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：提示注入为什么防不胜防？说出那条铁律。</p>
+        <p class="a">因为模型读的一切内容（网页、文件、命令输出）都可能被构造出恶意指令，而 harness 无法预先过滤所有文本。铁律：工具结果是数据，不是指令；根本防线是权限闸门与最小授权。</p>
+        <p class="q">Q2：fail-closed 是什么意思？举一个仓库里的实例。</p>
+        <p class="a">权限子系统自身故障时默认拒绝。例：ZCode 未配置权限应答端时使用 DenyPermissionBroker 一律 deny；dsh 的 ApprovalOutcome 不存在「永久允许」。</p>
+        <p class="q">Q3：为什么用 argv 语义分析而不是字符串黑名单判断 bash 命令危险性？</p>
+        <p class="a">黑名单误报高（教学命令里出现 rm 就拦）且易绕过（引号拆分、变量拼接）；解析 argv 后按子命令与 flag 分类才能准确回答「是否只读」。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：本地文件 <code>D:\GitHub\Deepseek-Harness\SAFETY.md</code>（官方安全定位自述：实验性、未经审计、沙箱不保证隔离——先读它再谈安全）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 7 章 ==================== -->
+<section class="chapter" id="ch7">
+  <h2><span class="chapter-no">第 7 章</span>子智能体与编排</h2>
+  <p class="lead">当任务太大、上下文太满、或者需要并行，主智能体可以派出「分身」。子智能体是上下文工程的最强武器。</p>
+
+  <h3>7.1 为什么需要子智能体</h3>
+  <p>三个理由，按重要性排序：</p>
+  <ol>
+    <li><strong>上下文隔离（最本质）</strong>：让子智能体带着全新的空消息历史去干脏活累活——翻 50 个文件、跑 20 条命令。它的历史再长也死在自己的沙盒里，主对话只收回一份<strong>结论报告</strong>。相当于把第 5 章的压缩问题消灭在发生之前；</li>
+    <li><strong>并行</strong>：三个互不依赖的调查任务（查文档、搜代码、跑基准）可以同时派出，主智能体等结果即可；</li>
+    <li><strong>人格与工具定制</strong>：子智能体可以有自己的系统提示词（「你是只读的代码侦探」）和精简工具集（只留 read/grep/glob），专注且安全。</li>
+  </ol>
+
+  <h3>7.2 工作机制：派活、隔离、汇报</h3>
+  <pre><code>// 子智能体的生命周期（伪代码）
+const report = await subagent({
+  prompt: "调查 src/auth 下 token 刷新逻辑，找出可能的竞态……",
+  profile: "Explore",              // 人格 + 只读工具集
+  // 注意：主智能体的消息历史【不会】复制进去
+});
+// report 只有一段文字结论——子智能体读过的 50 个文件
+// 全部留在它自己的历史里，没有进入主对话</code></pre>
+  <p>对主智能体而言，子智能体就是一个工具（常命名为 <code>task</code> / <code>agent</code> / <code>subagent</code>）；对子智能体而言，自己就是一台完整的 Agent Loop（第 3 章）。<strong>递归的分形结构</strong>——这是 harness 设计优雅的地方。</p>
+
+  <figure>
+  <div class="msg-flow">
+    <div class="msg m-user"><span class="role">主对话 · user</span>重构支付模块</div>
+    <div class="msg m-assistant"><span class="role">主对话 · assistant</span>我先派个分身彻底摸清现状。<br>🔧 tool_use: <code>subagent {"prompt": "调查支付模块现状并总结风险……"}</code></div>
+    <div class="msg m-tool"><span class="role">子智能体 · 隔离历史</span>读 30 个文件 · 跑 12 条命令 · 若干万字中间推理 ……（全部留在子上下文里，主对话看不见）</div>
+    <div class="msg m-tool"><span class="role">tool_result</span>结论：支付模块有 3 个风险点……（只有这一段文字回到主对话）</div>
+    <div class="msg m-assistant"><span class="role">主对话 · assistant</span>基于调查结论，我的重构方案是……</div>
+  </div>
+  <figcaption>图 7-1 · 上下文隔离：子智能体的长历史死在自己的沙盒里，主对话只收回一份结论。</figcaption>
+  </figure>
+
+  <div class="repo-box">
+    <div class="repo-box-title">📦 在真实仓库中 · 子智能体</div>
+    <ul>
+      <li><strong>ZCode</strong>：<code>core/src/subagent/runner.ts</code>（前台/后台生命周期）+ <code>profile.ts</code>（内置 <code>general-purpose</code> 与只读 <code>Explore</code> 人格，可用 markdown 覆盖）+ <code>tool-policy.ts</code>（子智能体工具过滤）；另有会话间消息（<code>SendMessage</code>/<code>RespondToCoordinator</code>）与「动态工作流」（模型用 <code>CreateWorkflow</code> 等工具编排多子代理，30+ 文件）。</li>
+      <li><strong>Deepseek-Harness</strong>：契约见 <code>docs/subsystems/subagent.md</code>。两种进程内派生：<code>subagent</code>（spawn，全新上下文）与 <code>subagent_fork</code>（fork，<strong>有意保留父模型以复用 KV Cache</strong>）；更激进的是<strong>外部 provider</strong>——可以把 Claude Code、Codex 当作受控子智能体驱动。</li>
+    </ul>
+  </div>
+
+  <h3>7.3 编排的三种常见形态</h3>
+  <table>
+    <thead><tr><th>形态</th><th>结构</th><th>适用</th></tr></thead>
+    <tbody>
+      <tr><td>主从派发（orchestrator-workers）</td><td>主智能体拆任务 → 派子智能体 → 汇总</td><td>可并行的调查/改造任务（最常用）</td></tr>
+      <tr><td>流水线（pipeline）</td><td>输出接输入，逐段传递</td><td>翻译 → 审校 → 排版这类阶段式加工</td></tr>
+      <tr><td>团队（team）</td><td>多智能体互发消息、有共享频道与协调者</td><td>长周期协作（复杂度也最高，慎用）</td></tr>
+    </tbody>
+  </table>
+  <div class="callout warn">
+    <span class="callout-title">⚠️ 编排不是银弹</span>
+    多智能体的通信成本、不一致风险、调试难度都在指数上升。Anthropic 的建议依然是：<strong>能用单智能体解决的，不要上编排</strong>（见其 Building Effective Agents 一文的模式选择讨论）。两个参考仓库都把子智能体做成了「主智能体的一个工具」，正是把编排权留给模型按需使用，而非强加框架。
+  </div>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 7 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：子智能体解决的最本质问题是什么？</p>
+        <p class="a">上下文隔离——把会撑爆主对话的长历史（大量文件读取、命令输出）关进子智能体自己的历史，只把结论带回。</p>
+        <p class="q">Q2：主智能体的消息历史会复制给子智能体吗？fork 与 spawn 的区别是什么？</p>
+        <p class="a">不会（这正是隔离的意义）。spawn 全新上下文；fork 保留父上下文且沿用父模型——Deepseek-Harness 用它复用 KV Cache，省时省钱。</p>
+        <p class="q">Q3：为什么说「子智能体就是递归的分形结构」？</p>
+        <p class="a">对主智能体它是工具（tool_use 调用），对子智能体自己是完整的 Agent Loop；同样的结构可以无限嵌套。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://www.anthropic.com/engineering/building-effective-agents">Building Effective Agents — Anthropic</a>（orchestrator-workers 等编排模式的原始出处与取舍建议）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 8 章 ==================== -->
+<section class="chapter" id="ch8">
+  <h2><span class="chapter-no">第 8 章</span>扩展生态：MCP、Hooks、插件与技能</h2>
+  <p class="lead">前七章的部件是 harness 的「出厂配置」。本章讲四条标准扩展通道——它们决定了 harness 能长成生态还是停在工具。</p>
+
+  <h3>8.1 MCP（Model Context Protocol）：工具的 USB 接口</h3>
+  <p>每个 harness 自带几十个内置工具，但你总会需要「连公司数据库」「查内部 wiki」。为每个 harness 各写一遍集成是浪费——MCP 把「工具服务器」标准化了：</p>
+  <ul>
+    <li><strong>架构</strong>：harness 内置 MCP <strong>client</strong>；任何人可写 MCP <strong>server</strong> 暴露工具、资源、提示模板；</li>
+    <li><strong>协议</strong>：JSON-RPC，传输走 stdio（本地子进程）或 HTTP（远程服务）；</li>
+    <li><strong>效果</strong>：MCP server 的工具汇入 harness 的工具注册表，对模型来说与内置工具无差别（命名常带前缀，如 <code>mcp__数据库名__查表</code>）。</li>
+  </ul>
+  <p>对照看点：ZCode 的 MCP 层功能很全（连接池、OAuth、资源订阅，<code>adapters/src/mcp/</code>）；dsh 则要求<strong>每个服务器显式 opt-in</strong> 才挂载（安全优先，<code>docs/subsystems/mcp.md</code>）。官方规范见 <a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a>。</p>
+
+  <h3>8.2 Hooks：生命周期上的确定性地雷</h3>
+  <p>Hook 是<strong>你自己写的脚本</strong>，挂在 harness 的生命周期点位上，用确定代码拦截模型的非确定行为：</p>
+  <table>
+    <thead><tr><th>点位</th><th>能干什么</th></tr></thead>
+    <tbody>
+      <tr><td>会话开始 / 用户提交</td><td>注入上下文（如当前项目背景）</td></tr>
+      <tr><td>PreToolUse（工具执行前）</td><td><strong>拦截</strong>：deny、修改参数（如强制加 <code>--dry-run</code>）</td></tr>
+      <tr><td>PostToolUse（工具执行后）</td><td>自动格式化、跑 lint、记审计日志</td></tr>
+      <tr><td>Stop（回合结束时）</td><td>检查产出，可强制「继续干活」</td></tr>
+    </tbody>
+  </table>
+  <p>典型协议：harness 以 JSON 喂给脚本 stdin，脚本从 stdout 吐回决策（ZCode 的约定是退出码 2 = 显式阻断，见 <code>apps/zcode-cli/packages/core/src/hooks/</code>，共 7 个事件）。<strong>注意架构差异</strong>：dsh 的核心没有 Claude-Code 式 hooks 框架，等价能力由 Cordis 事件瀑布（<code>tools/pre-execute</code> 等）承担，只提供实验性的 Claude Code hooks 兼容桥（<code>packages/experimental/hooks-claude-code/</code>）——同一需求，两种架构表达。</p>
+
+  <h3>8.3 插件与技能：打包复用的两级火箭</h3>
+  <ul>
+    <li><strong>插件（Plugin）</strong>：一个分发包，可同时携带技能、斜杠命令、MCP 服务器配置、甚至 UI 扩展。ZCode 与 Claude Code 的插件布局兼容（<code>.claude-plugin/plugin.json</code> 或 <code>.zcode-plugin/plugin.json</code>，装配在 <code>bootstrap/src/plugins.ts</code>）；dsh 的答案更彻底——<strong>一切皆 Cordis 插件</strong>，连 agent loop 自己都是（第 10 章展开）。</li>
+    <li><strong>技能（Skill）</strong>：一份 <code>SKILL.md</code> 打包的「流程知识」——部署步骤、评审清单、提交流程。核心设计是<strong>渐进披露</strong>：技能清单（名字+一句话描述）常驻系统提示词，正文按需加载。这样 50 个技能只花几百 token 的常驻成本。两仓库的技能发现路径都有明确的优先级链（项目 → 用户 → 内置）。</li>
+  </ul>
+
+  <h3>8.4 一张全景图：四条通道各管什么</h3>
+  <table>
+    <thead><tr><th>通道</th><th>扩展的是</th><th>谁写的</th><th>一句话</th></tr></thead>
+    <tbody>
+      <tr><td>MCP</td><td>工具与数据的供给</td><td>第三方（跨 harness 通用）</td><td>给模型接新设备</td></tr>
+      <tr><td>Hooks</td><td>生命周期的确定逻辑</td><td>用户/团队</td><td>在固定点位埋自己的代码</td></tr>
+      <tr><td>插件</td><td>以上三者的分发单元</td><td>社区/官方</td><td>一次安装全套带走</td></tr>
+      <tr><td>技能</td><td>模型的流程知识</td><td>用户/团队</td><td>把「怎么做」写成可加载的文档</td></tr>
+    </tbody>
+  </table>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 8 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：MCP 解决的核心问题是什么？用「USB」类比说一遍。</p>
+        <p class="a">工具集成的重复建设。MCP 把「工具服务器」标准化：harness 只需内置一个 client，任何 server 都能即插即用——像 USB 统一了外设接口。</p>
+        <p class="q">Q2：技能（Skill）为什么不怕数量多？关键机制是什么？</p>
+        <p class="a">渐进披露：清单（名称+一句话）常驻上下文，正文按需加载。50 个技能的常驻成本只有几百 token。</p>
+        <p class="q">Q3：ZCode 与 dsh 在 hooks 上体现了什么架构差异？</p>
+        <p class="a">ZCode 内置独立的 hooks 事件框架（7 事件 + 退出码协议）；dsh 无核心 hooks，等价能力由 Cordis 插件事件瀑布承担，另提供实验性兼容桥。</p>
+      </div>
+    </details>
+  </div>
+
+  <h3>延伸阅读</h3>
+  <ul>
+    <li>首选：<a href="https://modelcontextprotocol.io">MCP 官方文档</a>（协议与 SDK 的权威来源）</li>
+  </ul>
+</section>
+
+<!-- ==================== 第 9 章 ==================== -->
+<section class="chapter" id="ch9">
+  <h2><span class="chapter-no">第 9 章</span>源码走读：ZCode</h2>
+  <p class="lead">这一章是一张<strong>带路地图</strong>，不是要求你一次读完的教材。最好的用法：打开仓库，按图索骥，卡住了就回会话里让 agent 带你读。</p>
+
+  <h3>9.1 它是什么：三种形态，一个运行时</h3>
+  <p>ZCode 是一个 <strong>AI 编程工作台</strong>，同时以三种形态发布：Electron 桌面应用、浏览器 Web 界面、终端 Agent（TUI/CLI）。关键认知：<strong>三种皮共享同一个 Agent 运行时</strong>——位于 <code>apps/zcode-cli/</code>。桌面版由 Host 进程按工作区拉起独立的 zcode-cli 子进程，通过 stdio 上的 NDJSON 协议（每行一个 JSON 的流式格式；ZCode Protocol）通信。</p>
+  <div class="callout info">
+    <span class="callout-title">📖 别被目录骗了</span>
+    根目录的 <code>harness/</code> 只是一个 Docker SSH 测试服务器，<code>DESIGN.md</code> 是 UI 设计规范，<code>CONTEXT.md</code> 是插件商店的领域词汇表——<strong>都不是</strong> Agent 运行时代码。真正的架构文档在 <code>apps/zcode-cli/docs/design/v2/architecture.md</code>。
+  </div>
+
+  <h3>9.2 Monorepo 地图（只列和运行时相关的）</h3>
+  <table>
+    <thead><tr><th>目录</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><code>apps/zcode-cli/packages/contracts</code></td><td>契约层：接口与 schema，零依赖</td></tr>
+      <tr><td><code>apps/zcode-cli/packages/core</code></td><td><strong>领域逻辑主体</strong>：Agent 运行时、工具、权限、上下文、压缩——不碰任何 I/O</td></tr>
+      <tr><td><code>apps/zcode-cli/packages/adapters</code></td><td>I/O 适配：模型调用、文件、exec、MCP、SQLite 存储</td></tr>
+      <tr><td><code>apps/zcode-cli/packages/bootstrap</code></td><td>组装层：唯一允许把 core 和 adapters 拼起来的地方</td></tr>
+      <tr><td><code>apps/zcode-cli/packages/cli</code> · <code>tui</code></td><td>命令入口与终端界面</td></tr>
+      <tr><td><code>packages/desktop</code> · <code>web</code> · <code>server</code></td><td>桌面 / Web 外壳（运行时之外）</td></tr>
+      <tr><td><code>packages/provider</code> · <code>provider-node</code></td><td>模型目录与 provider 配置</td></tr>
+    </tbody>
+  </table>
+  <p>这个 <strong>contracts → core → adapters → bootstrap</strong> 四层架构是刻意的六边形架构：core 禁止直接调用 <code>fetch/fs/child_process</code>，并且用 <code>architecture-policy.yaml</code> + <code>pnpm architecture:check</code> 机械化守护——架构规则不是写在 wiki 上的君子协定，而是 CI 会挂的检查。</p>
+
+  <h3>9.3 启动链：从命令到第一个回合</h3>
+  <pre><code>apps/zcode-cli/packages/cli/src/main.ts      // 进程入口：env 清洗、模式分流
+  └─ run.ts                                 // 命令分发：tui / --prompt / app-server …
+      └─ bootstrap/src/app/create-app.ts     // createZCodeApp：组装根（composition root）
+          ├─ 挂载 fs/exec/http/mcp/skills 等 adapters
+          ├─ 打开 SQLite 会话库
+          └─ 实例化 AgentRuntime ──→ 用户输入经 input-facade 进入 turn loop</code></pre>
+
+  <h3>9.4 Agent Loop 的落地：与第 3 章伪代码逐行对上</h3>
+  <table>
+    <thead><tr><th>第 3 章伪代码</th><th>ZCode 落地文件（均在 <code>apps/zcode-cli/packages/core/src/</code> 下）</th></tr></thead>
+    <tbody>
+      <tr><td>① 消息历史</td><td><code>runtime/agent-runtime.ts</code> 的 <code>AgentRuntime</code> 持有 sessionId、<code>MessageHistory</code> 等</td></tr>
+      <tr><td>② while 循环</td><td><code>runtime/methods/turn-loop.ts</code> 的 <code>runRegularTurnLoop</code>——每轮先处理命令队列与 mid-turn 输入，再做压缩检查，最后调模型</td></tr>
+      <tr><td>③ 组装请求</td><td><code>runtime/helpers/provider-request-messages.ts</code> + <code>context/builder.ts</code></td></tr>
+      <tr><td>调用模型</td><td>Vercel AI SDK 6 适配链：<code>adapters/src/model/runner.ts</code>（重试/鉴权/遥测）+ <code>runner-stream.ts</code>（流式）</td></tr>
+      <tr><td>⑤ 停止条件</td><td><code>runtime/methods/turn-stop.ts</code>——无工具调用即终止，但 Stop hook 可 <code>continue:true</code> 强制续跑（有次数封顶）</td></tr>
+      <tr><td>⑥ 工具执行</td><td><code>runtime/methods/turn-tools.ts</code> → <code>tool/scheduler.ts</code> → <code>tool/executor/batch-runner.ts</code></td></tr>
+      <tr><td>权限闸门</td><td><code>tool/executor/impl.ts</code> 内的 <code>resolveToolPermission</code> → <code>permission/service.ts</code></td></tr>
+      <tr><td>⑧ 结果回填</td><td><code>tool/executor/errors.ts</code> 包装错误为结果；大结果落 artifact store 并按 <code>resultBudget</code> 截断</td></tr>
+    </tbody>
+  </table>
+  <p>在这张骨架上，ZCode 加了两层精细化：</p>
+  <ul>
+    <li><strong>显式回合状态机</strong>：<code>agent/turn-machine.ts</code> + <code>turn-state.ts</code>——回合有 ProcessingInput → ModelRequest → Streaming → ToolScheduling → ToolExecution → AggregatingResults → Complete/Failed 的相位，每次迁移经 <code>canTransitionTo</code> 校验。伪代码里一个 <code>while(true)</code> 背后的真实复杂度长这样；</li>
+    <li><strong>流的韧性</strong>：SSE（服务器推送的事件流）空闲超时、流断恢复（<code>streaming-recovery.ts</code>）、取消流的持久化、<strong>流中工具协调器</strong>（工具在流还没结束时就抢先开始执行，<code>streaming-tool-coordinator.ts</code>）。</li>
+  </ul>
+
+  <h3>9.5 工具系统：安全元数据是单一事实源</h3>
+  <p>ZCode 内置约 40 个工具。每个工具在 <code>core/src/tool/types.ts</code> 的 <code>ToolMetadata</code> 里声明：<code>readOnly / destructive / concurrentSafe / sideEffectScope / riskLevel / needsApproval / timeoutMs / maxOutputBytes / stopTurnOnSuccess</code>……<strong>声明一次，处处消费</strong>：</p>
+  <pre><code>调度器（scheduler.ts）      读 concurrentSafe/destructive → 决定并行还是串行
+权限系统（permission/）      读 readOnly/riskLevel        → 决定 allow/ask/deny
+注册表投影（registry.ts）    读全套                       → 给前端与模型看</code></pre>
+  <p>执行管线（<code>tool/executor/impl.ts</code>）：zod（一个 JS 参数校验库）校验输入 → PreToolUse hook（可拦截可改参）→ 权限判定 → handler → PostToolUse hook → 结果投影。调度器做<strong>拓扑排序 + 并行分组</strong>（破坏性工具串行成屏障，只读工具并行，默认并发上限 10）。彩蛋两枚：</p>
+  <ul>
+    <li><strong>Read 的 mtime 去重</strong>（<code>tool/handlers/read.ts</code>）：文件没变重复读，直接返回「Wasted call — file unchanged」，省 token 还顺便教育模型；</li>
+    <li>终态工具（如 <code>submit_result</code>）可声明 <code>stopTurnOnSuccess</code>，成功即结束回合、其余在途工具改写为取消。</li>
+  </ul>
+
+  <h3>9.6 权限：六模式 + 命令语义分析器</h3>
+  <ul>
+    <li>六种协作模式：<code>plan / build / edit / yolo / guarded / auto</code>（<code>contracts/src/interfaces/session.port.ts</code>）；</li>
+    <li>判定核心：<code>permission/service.ts</code> → allow/ask/deny 结构化判决；ask 挂到 <code>permission/broker.ts</code> 等界面应答，<strong>无应答端一律 deny</strong>；</li>
+    <li>Bash 只读分析器：<code>tool/handlers/bash-readonly-policy*.ts</code> 约 20 个文件做 argv 级语义判定（第 6.4 节案例的出处）。</li>
+  </ul>
+
+  <h3>9.7 上下文：分节拼装 + 双层压缩</h3>
+  <ul>
+    <li><strong>拼装</strong>：<code>context/builder.ts</code> 分节注入并带缓存提示（第 5.1 节）；AGENTS.md 向上查找、限 100KB（<code>adapters/src/context/index.ts</code>）；</li>
+    <li><strong>预算</strong>：<code>compact/policy.ts</code>——200K 窗口、输出预留 ≤21K、缓冲 13K（第 5.2 节公式的出处）；</li>
+    <li><strong>双层压缩</strong>：microcompact（<code>compact/microcompact.ts</code>）+ auto-compact（<code>compact/manual.ts</code>、总结预留 20K）+ rapid-refill 熔断（第 5.3 节案例的出处）；</li>
+    <li><strong>system-reminder 体系</strong>：<code>core/src/system-reminder/</code>——todo 提醒、模式变更等以合成 user 消息按需注入；对后台任务通知带「[SYSTEM NOTIFICATION - NOT USER INPUT]」前缀，<strong>把反提示注入写进了模板层</strong>。</li>
+  </ul>
+
+  <h3>9.8 子智能体与扩展</h3>
+  <ul>
+    <li>子智能体三层：经典 subagent（<code>subagent/runner.ts</code> + 只读 <code>Explore</code> 人格）/ 会话间消息（<code>SendMessage</code> 等，带反权限洗白指引）/ 动态工作流 DWF（模型用 <code>CreateWorkflow</code> 等工具编排多子代理，journal + replay + 对账，30+ 文件）；</li>
+    <li>MCP：<code>adapters/src/mcp/</code>（连接池、OAuth、resource 订阅），工具命名 <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>；</li>
+    <li>Hooks：7 事件（<code>core/src/hooks/</code>），进程型 stdin/stdout JSON 协议，退出码 2 = 阻断；带 workspace hook 信任体系；</li>
+    <li>插件与技能：兼容 Claude Code 插件布局；技能渐进披露（清单进 system prompt，正文按需加载）；</li>
+    <li>独家的 <strong>UI Plugin / Gen UI</strong>：工具结果可携带交互式 HTML 页面（基于 MCP Apps），甚至让 Agent 现场生成界面嵌入对话——harness 开始反哺界面层。</li>
+  </ul>
+
+  <h3>9.9 持久化：SQLite 事件溯源</h3>
+  <p>会话以 <strong>SessionEvent 事件流</strong>落 SQLite（<code>adapters/src/storage/session-store/sqlite-session-store.ts</code>，用 Node 内置 <code>node:sqlite</code>），仓储分表（messages/todos/usage/工作流日志等）。由事件流可推出一切——于是<strong>会话恢复、分叉、回滚</strong>成为一等能力（<code>runtime/methods/resume.ts</code>、<code>session-fork.ts</code>、<code>rewind.ts</code>，甚至有文件级 rewind 的 workspace checkpoints）。</p>
+
+  <h3>9.10 六个值得偷师的设计</h3>
+  <ol>
+    <li>架构规则机械化执行（<code>architecture-policy.yaml</code> + CI 检查）；</li>
+    <li>工具安全元数据单一事实源（声明一次，调度/权限/展示三处消费）；</li>
+    <li>反提示注入的系统提醒措辞（模板层防御）；</li>
+    <li>双层压缩 + 熔断器（压不住时停下来，而不是死循环）；</li>
+    <li>Bash 命令语义分析器（权限判定靠语义不靠正则）；</li>
+    <li>「Dream」记忆整理（<code>core/src/memory/dream.ts</code>：带 mtime 锁与 24 小时间隔的后台记忆提取—巩固—召回）。</li>
+  </ol>
+
+  <h3>9.11 推荐读码路线（一个下午的量）</h3>
+  <ol>
+    <li><code>apps/zcode-cli/docs/design/v2/architecture.md</code> —— 四层架构官方定义（30 分钟）；</li>
+    <li><code>core/src/runtime/methods/turn-loop.ts</code> —— 对照第 3 章伪代码找八个步骤（1 小时，最重要）；</li>
+    <li><code>core/src/tool/types.ts</code> + <code>tool/handlers/read.ts</code> —— 看一个工具的完整定义（30 分钟）；</li>
+    <li><code>core/src/permission/service.ts</code> —— allow/ask/deny 判定（30 分钟）；</li>
+    <li><code>core/src/compact/microcompact.ts</code> —— 感受压缩的真实粒度（30 分钟）。</li>
+  </ol>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 9 章（打开仓库实操后再答）</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：不打开仓库，凭本章记忆说出 ZCode 四层架构的名字与依赖方向。</p>
+        <p class="a">contracts（契约，零依赖）→ core（领域逻辑，不碰 I/O）→ adapters（全部外部 I/O）→ bootstrap（唯一组装层）。依赖方向永远从外向内。</p>
+        <p class="q">Q2：动手题：在 <code>turn-loop.ts</code> 里找到「压缩检查」发生在调用模型之前还是之后？在 <code>read.ts</code> 里找到 mtime 去重的判断行。</p>
+        <p class="a">压缩检查在每轮循环开头、调模型之前（microcompact/auto-compact 检查）；read.ts 中文件 mtime 未变时直接返回 "Wasted call" 提示。（打开文件核对你会记得更牢）</p>
+        <p class="q">Q3：为什么 ZCode 敢把「会话分叉/回滚」做成一等能力？存储模型给了它什么底气？</p>
+        <p class="a">事件溯源：会话 = 事件流，任意状态可由事件重放推出。分叉 = 从某事件点重放，回滚 = 截断事件流，天然可行。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ==================== 第 10 章 ==================== -->
+<section class="chapter" id="ch10">
+  <h2><span class="chapter-no">第 10 章</span>源码走读：Deepseek-Harness（dsh）</h2>
+  <p class="lead">DeepSeek 官方开源的通用 harness（命令名 <code>dsh</code>，MIT 协议，developer preview）。它的口号「everything is a plugin」不是修辞——连 Agent Loop 自己都是插件。与 ZCode 的「分层架构」对照着读，你会看到同一些概念的两种完全不同的架构表达。</p>
+
+  <h3>10.1 它是什么：Web 优先，多端并存</h3>
+  <p>启动方式：<code>npx @deepseek-ai/dsh web</code>，在 <code>http://127.0.0.1:3080</code> 起本地 Web UI。<strong>没有传统 TUI</strong>；无人值守场景用 <code>--profile headless</code>（NDJSON 事件流输出）；还有 Python SDK（<code>python/</code>，把 dsh 当子进程驱动）与 ACP 协议入口。四个目录先认清：</p>
+  <table>
+    <thead><tr><th>目录</th><th>是什么</th></tr></thead>
+    <tbody>
+      <tr><td><code>apps/cli</code></td><td>命令行壳，bin 名 <code>dsh</code></td></tr>
+      <tr><td><code>packages/</code></td><td>主体，约 50 个分组的插件包（core / llm / bundle / subagent / …）</td></tr>
+      <tr><td><code>python/</code></td><td>Python SDK 与发行载体（捆绑 CLI + native sidecar）</td></tr>
+      <tr><td><code>native/</code></td><td>原生 addon：Linux Landlock 启动器 + POSIX flock 文件锁（沙箱后端）</td></tr>
+      <tr><td><code>vendor/</code></td><td> vendored 进来的 Cordis 框架全家桶（源码副本，改了 scope）</td></tr>
+    </tbody>
+  </table>
+  <div class="callout info">
+    <span class="callout-title">📖 治理范式看点</span>
+    dsh <strong>不是</strong>任何项目的 fork（remote 指向 <code>github.com/deepseek-ai/deepseek-harness</code>）。但它的插件底座 Cordis 是整棵 vendor 进来的源码副本，<code>vendor/README.md</code> 逐条记录了 23 处本地修改（生命周期加固、Windows 兼容……）。「vendoring 而非 fork，改动留痕可审计」——依赖治理的教科书示范。
+  </div>
+
+  <h3>10.2 Cordis：一切皆插件</h3>
+  <p>Cordis 是一个带依赖注入的插件框架。在 dsh 里，agent loop、工具注册表、模型适配器、会话日志<strong>全部以插件（Service）形式存在</strong>，通过 <code>ctx</code>（上下文）互相发现。启动时按 <strong>profile 组合</strong>装配：默认组合是声明式插件表 <code>packages/bundle/base/cordis.patch.yml</code>（约 100 行），再按 <code>web-app / headless / sdk-app / acp-app</code> 等 profile 叠加覆盖。base 里能看到许多默认值：默认模型 <code>deepseek-flash</code>、权限模式 <code>workspace-write</code>、工具结果裁剪阈值、Windows 用 pwsh 沙箱其他平台用 bash 沙箱……<strong>想理解 dsh 的出厂行为，读这一个文件就够了</strong>。</p>
+
+  <h3>10.3 Agent Loop 的落地：状态机 + 日志投影</h3>
+  <p>核心实现在 <code>packages/core/agent-loop/src/agent.ts</code>——<code>ReactLoopAgent</code>，一台三相状态机（idle / maintenance / running）。术语对照：<strong>step = 一次模型请求 + 它触发的工具调用；turn = 若干 step</strong>。与第 3 章伪代码的映射：</p>
+  <table>
+    <thead><tr><th>第 3 章伪代码</th><th>dsh 落地（<code>packages/core/agent-loop/src/</code>）</th></tr></thead>
+    <tbody>
+      <tr><td>① 消息历史</td><td><strong>没有常驻聊天数组</strong>——每次请求由会话事件日志投影推导（<code>buildRequest()</code> 调 <code>session.deriveMessages()</code>）</td></tr>
+      <tr><td>② while 循环</td><td><code>agent.ts</code> 的 <code>step()</code>：组装 → 流式调用 → 落 <code>assistant/message</code> → <code>executeToolCalls()</code></td></tr>
+      <tr><td>③ 组装请求</td><td><code>preStep()</code>：认领收件箱消息 → 系统提示组装 → <code>agent/pre-step</code> 瀑布（压缩在此挂钩）</td></tr>
+      <tr><td>调用模型</td><td><code>ctx.llm.stream()</code>——不用 OpenAI SDK，DeepSeek 适配器手写 fetch + SSE（<code>packages/llm/llm-deepseek/</code>）</td></tr>
+      <tr><td>⑤ 停止条件</td><td><code>turn/end</code> 带 <code>TurnEndReason</code>（completed / error / 中断）</td></tr>
+      <tr><td>⑥ 工具执行</td><td><code>tool-calls.ts</code> 的 <code>executeToolCalls()</code>：按执行模式分组，有界滚动池并行</td></tr>
+      <tr><td>权限闸门</td><td><code>tools/pre-execute</code> 决策点（allow/deny/cancel/ask）+ 单调 guard</td></tr>
+      <tr><td>⑧ 结果回填</td><td>工具结果落日志事件 <code>tool/result</code>，下一步请求从日志重新投影</td></tr>
+    </tbody>
+  </table>
+  <p>两个特色机制：</p>
+  <ul>
+    <li><strong>收件箱模型</strong>：所有输入（<code>followup</code> 排下一回合 / <code>steer</code> 插下一小步 / <code>inject</code> 注入不唤醒）进入统一收件箱，由状态机在相位边界认领——转向（steering）是一等能力；</li>
+    <li><strong>「模型可见 ⟺ 已落日志」</strong>：请求消息从事件日志投影而来，而不是内存里维护的数组。免费收获三样东西：<strong>崩溃恢复</strong>（<code>resume()</code> 补写缺失的收尾事件，把断掉的 turn 闭合到可续跑）、跨端历史回放、压缩前后的可审计投影。</li>
+  </ul>
+
+  <h3>10.4 工具系统：输出也是契约</h3>
+  <p>工具运行时在 <code>packages/core/tools/src/index.ts</code>（<code>ToolRuntime</code>）。定义比第 4 章的四要素多两样狠东西：</p>
+  <pre><code>ToolDefinition = {
+  name, description, parameters,          // 第 4 章讲过的四要素之三
+  output: {                               // ★ 强制的输出契约
+    schema: JsonSchemaNode,               //   输出也要过 JSON Schema 校验
+    render(args, value): ContentBlock[],  //   给模型看的投影
+    presentationMeta?,                     //   给 UI 看的投影（双投影分离）
+  },
+  execute(args, exec),                     // 执行器
+  isConcurrencySafe?, timeoutMs?,          // 调度与超时元数据
+}</code></pre>
+  <ul>
+    <li><strong>双投影</strong>：同一个结果，「模型该看到的」与「界面该展示的」分离——模型看精简 JSON，人看渲染后的表格；</li>
+    <li><strong>单调 guard</strong>：工具一旦被禁用就不能再放行（安全状态只紧不松）；被跳过的调用会合成 <code>ABORTED_BEFORE_DISPATCH</code> 结果回填，模型看得懂发生了什么；</li>
+    <li><strong>保序并行</strong>：并发安全的工具进有界滚动池（<code>maxParallelToolCalls</code>），但<strong>结果按模型给出的顺序提交</strong>——并行的速度、串行的确定性，两个都要；</li>
+    <li><strong>PTC 模式</strong>（独门）：开启后<strong>全部工具坍缩成一个 <code>run_code</code></strong>——系统提示按目标语言生成 SDK 说明，模型直接写代码调 SDK，harness 进程内解释执行。用代码的表达力替换 N 个窄工具，市面上少见路线。</li>
+  </ul>
+
+  <h3>10.5 权限与沙箱：矩阵式配置</h3>
+  <ul>
+    <li>三档模式：<code>read-only / workspace-write / danger-full-access</code>（默认第二档）；</li>
+    <li>审批：<code>ApprovalService</code>，结果为封闭联合类型，无「永久允许」，审计事件成对落日志（第 6.3 节案例出处，<code>docs/subsystems/approval.md</code>）；</li>
+    <li>沙箱后端矩阵：Linux bubblewrap / Linux Landlock（自研 native addon）/ macOS Seatbelt / Windows ACL（<code>docs/subsystems/sandbox.md</code>）——同一套 <code>SandboxExecutionPolicy</code>，四种平台实现，<strong>比 ZCode 重得多的隔离投入</strong>；</li>
+    <li>诚实前置：<code>SAFETY.md</code> 明说「实验性、未经第三方审计、沙箱不保证隔离」。</li>
+  </ul>
+
+  <h3>10.6 上下文：编号槽位 + 无缓存 API 的缓存策略</h3>
+  <ul>
+    <li>系统提示 = 编号槽位（<code>packages/core/system-prompt/</code>，第 5.1 节案例出处），支持按 agent 作用域遮蔽（全局层 + scope 链，最近者优先）；</li>
+    <li>AGENTS.md 注入：候选 <code>AGENTS.md | CLAUDE.md</code>，上限 64KB，<strong>不自动注入 git 状态与目录树</strong>（与 ZCode 的取舍不同）；</li>
+    <li>压缩：<code>CompactionEngine</code> 压力 + 溢出双触发（第 5.3 节案例出处）；配套 token 计量（<code>docs/subsystems/token-meter.md</code>：表面节点 + provider usage 锚点双轨）；</li>
+    <li>提示缓存：无显式 API，靠结构设计吃缓存（第 5.4 节案例出处）。</li>
+  </ul>
+
+  <h3>10.7 子智能体：连别家 agent 都能打工</h3>
+  <p><code>packages/subagent/</code> + 契约 <code>docs/subsystems/subagent.md</code>。<code>SubagentProvider</code> 接口声明能力（工具过滤、输出 schema、深度上限、人格、是否继承父上下文）。provider 分两类：<strong>进程内</strong>（<code>subagent</code> 全新派生 / <code>subagent_fork</code> 保留父模型复用 KV Cache）与<strong>外部</strong>——claude-code、codex、acp、dsh-sdk。<strong>dsh 可以把 Claude Code 与 Codex 当作受控子智能体驱动</strong>：harness 之间不是竞争关系，是组合关系。</p>
+
+  <h3>10.8 扩展机制：插件即宪法</h3>
+  <ul>
+    <li>原生扩展就是写 Cordis 插件；更激进的是 <strong>runtime-authored 插件</strong>（<code>packages/extensions/</code>）：模型/浏览器创作的插件可在运行期挂载执行；</li>
+    <li>MCP：用官方 SDK，<strong>按服务器逐个显式 opt-in</strong>（安全优先）；不支持 prompt templates / elicitation / subscriptions；</li>
+    <li>Skills：<code>SKILL.md</code> 格式，发现根按 rank 排序（项目 <code>.dsh/skills</code> → <code>.agents/skills</code> → 自定义 → 用户 → 内置）；</li>
+    <li>Hooks：<strong>核心没有</strong> Claude-Code 式 hooks 框架，等价能力由 Cordis 事件瀑布承担，另有两个实验性兼容桥（<code>packages/experimental/hooks-claude-code/</code>、<code>hooks-codex/</code>）。</li>
+  </ul>
+
+  <h3>10.9 持久化：JSONL 世代迁移</h3>
+  <p>会话事件日志以 JSONL 落盘（可选 Zstd 压缩，<code>docs/subsystems/persistence.md</code>），<strong>格式分 generation，相邻版本配迁移包</strong>（v0→v4 迁移链）。单写者持有 <code>SessionHandle</code>，写后批量 flush。崩溃恢复靠日志连续性 + agent-loop 的 <code>interruptedTurnClosers</code>（补写缺失收尾、合成 interrupted 回合终结）。</p>
+
+  <h3>10.10 五个值得偷师的设计</h3>
+  <ol>
+    <li>一切皆插件 + vendor 治理留痕（架构即依赖图，改动即审计记录）；</li>
+    <li>请求从事件日志投影推导（崩溃恢复、回放、可审计压缩白送）；</li>
+    <li>工具输出即契约 + 双投影（模型视角与 UI 视角彻底分离）；</li>
+    <li>保序并行池（并行提速不牺牲确定性）；</li>
+    <li>PTC 模式（把工具调用升维成写代码）。</li>
+  </ol>
+
+  <h3>10.11 推荐读码路线（一个下午的量）</h3>
+  <ol>
+    <li><code>README.zh.md</code> + <code>docs/architecture.md</code> —— 定位与「Plugins, not loop changes」约定（30 分钟）；</li>
+    <li><code>packages/bundle/base/cordis.patch.yml</code> —— 出厂默认值一览（20 分钟，性价比最高）；</li>
+    <li><code>packages/core/agent-loop/src/agent.ts</code> —— 对照第 3 章找 step/turn（1 小时，最重要）；</li>
+    <li><code>packages/core/tools/src/index.ts</code> —— 工具输出契约与门禁管线（40 分钟）；</li>
+    <li><code>docs/subsystems/</code> 目录挑 compaction 与 sandbox 两篇契约文档（30 分钟）。</li>
+  </ol>
+
+  <div class="selftest">
+    <details class="selftest">
+      <summary>自测 · 第 10 章</summary>
+      <div class="selftest-body">
+        <p class="q">Q1：dsh 的「模型可见 ⟺ 已落日志」是什么意思？它白送了哪三个能力？</p>
+        <p class="a">发给模型的消息序列永远从会话事件日志投影推导，不是内存数组。白送：崩溃恢复（补写收尾事件闭合断掉的 turn）、跨端历史回放、压缩前后的可审计投影。</p>
+        <p class="q">Q2：工具「双投影」分离的是什么与什么？</p>
+        <p class="a">render 给模型看的精简内容 与 present 给人看的 UI 呈现——同一份数据，两个受众。</p>
+        <p class="q">Q3：dsh 与 ZCode 在 hooks 与沙箱上的投入为何如此不同？说说你的推断。</p>
+        <p class="a">开放题。可从产品形态推：dsh 定位通用宿主框架（要开放第三方插件与外部 provider，隔离必须重），ZCode 定位工作台（权限门控优先）；架构上 dsh 有 Cordis 事件瀑布可复用，ZCode 需要独立 hooks 协议对接生态（还兼容 Claude Code 布局）。言之有据即可。</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<!-- ==================== 第 11 章 ==================== -->
+<section class="chapter" id="ch11">
+  <h2><span class="chapter-no">第 11 章</span>术语表</h2>
+  <p class="lead">按主题分组。读手册卡住时来这里查；复习时直接当检索卡片用（遮住定义自己背）。</p>
+
+  <h3>基础概念</h3>
+  <dl class="glossary">
+    <dt>大语言模型 <span class="en">LLM</span></dt><dd>接收文本预测文本的神经网络。无状态、无行动能力、不知道环境——只负责「思考」。</dd>
+    <dt>智能体 <span class="en">Agent</span></dt><dd>模型 + Harness 的整体：能感知（读工具结果）、决策（模型）、行动（执行工具）的循环系统。</dd>
+    <dt>挽具 / 运行时 <span class="en">Harness</span></dt><dd>包裹模型的那层软件：管理消息、执行工具、控制权限、维护会话。「同一个模型，不同的 harness，不同的结果」。</dd>
+    <dt>词元 <span class="en">Token</span></dt><dd>模型处理文本的计量单位。一个汉字约折合 0.5–1 个 token（因模型分词器而异，新分词器更省），代码更碎。API 按 token 计费、按窗口限量。</dd>
+    <dt>上下文窗口 <span class="en">Context Window</span></dt><dd>单次请求能容纳的总 token 上限，由系统提示词、工具定义、消息历史、输出共享。</dd>
+  </dl>
+
+  <h3>循环与消息</h3>
+  <dl class="glossary">
+    <dt>智能体循环 <span class="en">Agent Loop</span></dt><dd>「调模型 → 执行工具 → 结果回填 → 再调模型」的核心循环，直到模型不再请求工具（第 3 章）。</dd>
+    <dt>消息历史 <span class="en">Message History</span></dt><dd>按序排列的全部对话消息，智能体唯一的记忆载体。模型能看到什么完全由它决定。</dd>
+    <dt>回合 / 步骤 <span class="en">Turn / Step</span></dt><dd>turn = 用户一句话触发的完整工作段（若干次模型调用）；step = 其中一次模型请求及其工具执行。dsh 用语，ZCode 用显式状态机相位表达类似粒度。</dd>
+    <dt>工具调用请求 <span class="en">tool_use</span></dt><dd>assistant 消息中模型发起的调用申请（工具名 + 参数 + id）。模型只申请，从不执行。</dd>
+    <dt>工具结果 <span class="en">tool_result</span></dt><dd>Harness 执行后回填的结果（或报错），与 tool_use 按 id 一一配对、顺序紧跟。</dd>
+    <dt>流式 <span class="en">Streaming</span></dt><dd>逐 token 接收模型输出。用于尽早渲染、尽早暴露工具意图、提前弹权限确认。</dd>
+    <dt>停止条件 <span class="en">Stop Condition</span></dt><dd>循环终止的判定：模型回复不含 tool_use。生产实现还配步数上限、超时、错误风暴熔断等保险丝。</dd>
+    <dt>系统提醒 <span class="en">system-reminder</span></dt><dd>运行时以合成 user 消息按需注入的状态提醒（todo、模式变更等），带「非用户输入」标记以防注入。</dd>
+  </dl>
+
+  <h3>工具与上下文</h3>
+  <dl class="glossary">
+    <dt>JSON Schema</dt><dd>描述 JSON 参数「形状」的标准。工具用它告诉模型怎么填参，Harness 用它校验模型填的对不对。</dd>
+    <dt>工具注册表 <span class="en">Tool Registry</span></dt><dd>Harness 内全部可用工具的登记处，模型请求的分发查它，权限判定也查它。</dd>
+    <dt>分发 <span class="en">Dispatch</span></dt><dd>从 tool_use 到真实执行的路径：查表 → 校验参数 → 权限闸门 → 执行器（第 4.2 节）。</dd>
+    <dt>上下文压缩 <span class="en">Compaction</span></dt><dd>窗口装不下时的瘦身组合拳：裁剪旧工具结果、微压缩、整体摘要、溢出急救（第 5.3 节）。</dd>
+    <dt>微压缩 <span class="en">Microcompact</span></dt><dd>ZCode 术语：把较老的只读工具结果清成占位符，保留对话文字的低损失压缩。</dd>
+    <dt>提示缓存 <span class="en">Prompt Caching</span></dt><dd>请求前缀与上次相同则命中折扣计费。工程要点：前缀稳定、易变信息放尾部（第 5.4 节）。</dd>
+    <dt>KV Cache</dt><dd>推理引擎内部对已算前缀的键值缓存。dsh 的 <code>subagent_fork</code> 保留父模型就是为了复用它。</dd>
+    <dt>渐进披露 <span class="en">Progressive Disclosure</span></dt><dd>技能系统的省上下文设计：清单常驻、正文按需加载（第 8.3 节）。</dd>
+  </dl>
+
+  <h3>安全与扩展</h3>
+  <dl class="glossary">
+    <dt>权限模式 <span class="en">Permission Mode</span></dt><dd>会话级安全档位。ZCode 六档（plan→yolo），dsh 三档（read-only→danger-full-access）。</dd>
+    <dt>失败关闭 <span class="en">Fail-closed</span></dt><dd>权限子系统自身故障时默认拒绝而非放行（第 6.3 节）。</dd>
+    <dt>沙箱 <span class="en">Sandbox</span></dt><dd>给命令执行画的隔离圈：限制可写路径、禁网络、限进程。dsh 按平台配四种后端。</dd>
+    <dt>提示注入 <span class="en">Prompt Injection</span></dt><dd>工具结果等数据里藏恶意指令的攻击。铁律：数据不是指令，防线是权限与最小授权。</dd>
+    <dt>子智能体 <span class="en">Subagent</span></dt><dd>主智能体派出的分身：独立消息历史、可定制人格与工具集、只回传结论报告（第 7 章）。</dd>
+    <dt>编排 <span class="en">Orchestration</span></dt><dd>多智能体协作的组织方式：主从派发、流水线、团队（第 7.3 节）。</dd>
+    <dt>模型上下文协议 <span class="en">MCP</span></dt><dd>工具服务器的开放标准（JSON-RPC over stdio/HTTP），「工具的 USB 接口」（第 8.1 节）。</dd>
+    <dt>钩子 <span class="en">Hook</span></dt><dd>用户脚本挂在生命周期点位（PreToolUse/PostToolUse/Stop 等）上拦截或加工的确定逻辑（第 8.2 节）。</dd>
+    <dt>插件 / 技能 <span class="en">Plugin / Skill</span></dt><dd>插件是携带技能、命令、MCP 配置的分发包；技能是 SKILL.md 打包的流程知识（第 8.3 节）。</dd>
+    <dt>事件溯源 <span class="en">Event Sourcing</span></dt><dd>会话存为事件流、状态由重放推出的存储模型。ZCode（SQLite）与 dsh（JSONL）都用它，分叉/恢复/回放由此免费。</dd>
+    <dt>程序化工具调用 <span class="en">PTC</span></dt><dd>dsh 特色模式：全部工具坍缩为一个 <code>run_code</code>，模型写代码调 SDK 完成一切（第 10.4 节）。</dd>
+  </dl>
+</section>
+
+<!-- ==================== 第 12 章 ==================== -->
+<section class="chapter" id="ch12">
+  <h2><span class="chapter-no">第 12 章</span>学习路线图与后续课程</h2>
+
+  <h3>12.1 复习节奏（比读完更重要）</h3>
+  <p>读一遍只建立「流畅感」，它会骗人。按这个节奏重做各章自测，把知识从流畅变成长期记忆：</p>
+  <table>
+    <thead><tr><th>时间点</th><th>做什么</th></tr></thead>
+    <tbody>
+      <tr><td>今天</td><td>合上手册，把第 2.3 节消息流图和第 3.3 节伪代码默画一遍</td></tr>
+      <tr><td>三天后</td><td>打乱章节顺序重做全部自测（检索练习 + 交错练习）</td></tr>
+      <tr><td>一周后</td><td>做 9.11 / 10.11 的读码路线，边读边对照手册找概念</td></tr>
+      <tr><td>随时</td><td>向 agent 提问：「用 dsh 的代码给我讲一遍 tool_result 配对」</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.2 后续互动课程（规划）</h3>
+  <p>手册建立地图，课程带你走图。每课一个小主题、一个小胜利，将陆续出现在工作区 <code>lessons/</code> 目录：</p>
+  <ol>
+    <li><strong>0001 · 手写 Agent Loop</strong>：亲手跑通 3.3 节伪代码的真码版（对应第 2–3 章）</li>
+    <li><strong>0002 · 造一个工具</strong>：定义、注册、分发、错误回报全链路（对应第 4 章）</li>
+    <li><strong>0003 · 上下文攻防</strong>：把一个长会话亲手撑爆再压回去（对应第 5 章）</li>
+    <li><strong>0004 · 权限实验</strong>：改规则、看判决、体验 fail-closed（对应第 6 章）</li>
+    <li><strong>0005 · 派一个子智能体</strong>：对比隔离前后的上下文占用（对应第 7 章）</li>
+    <li><strong>0006 · 源码实训</strong>：跟 agent 结对走读两个仓库的 turn loop（对应第 9–10 章）</li>
+  </ol>
+
+  <h3>12.3 怎么判断「学会了」</h3>
+  <ul>
+    <li>能对同事讲清六大子系统（循环/工具/上下文/权限/子智能体/扩展）的原理与关系；</li>
+    <li>给出任意概念，能在两个仓库里定位到实现文件（用第 9、10 章的地图）;</li>
+    <li>能独立描述一次请求从输入到最终回复的完整生命周期；</li>
+    <li>看到新 harness（Claude Code、OpenCode……）的新闻时，能判断它在哪个子系统上做了什么取舍。</li>
+  </ul>
+
+  <h3>12.4 资源总表</h3>
+  <ul>
+    <li><a href="https://parallel.ai/articles/what-is-an-agent-harness">Parallel · What is an agent harness?</a> —— 定义入门</li>
+    <li><a href="https://www.anthropic.com/engineering/building-effective-agents">Anthropic · Building Effective Agents</a> —— 模式与取舍的基准</li>
+    <li><a href="https://ampcode.com/notes/how-to-build-an-agent">Thorsten Ball · How to Build an Agent</a> —— 「不是魔法」实证</li>
+    <li><a href="https://www.latent.space/p/attention-interface">Latent Space · The Evolution of the Agent Harness</a> —— 学科演化</li>
+    <li><a href="https://www.latent.space/p/harness-eng">Latent Space · Extreme Harness Engineering</a> —— 进阶实战</li>
+    <li><a href="https://modelcontextprotocol.io">MCP 官方文档</a> —— 扩展生态权威</li>
+    <li>本地：<code>D:\GitHub\ZCode</code>、<code>D:\GitHub\Deepseek-Harness</code> —— 一切概念的落地现场</li>
+  </ul>
+
+  <div class="callout tip">
+    <span class="callout-title">💡 最后一页，第一句话</span>
+    手册会过时，仓库会演进，但你的私人教师不会下班。任何时候——读完一章、卡在一个文件、想验证一个猜想——回到会话里开口问。<strong>学会向 agent 提问，本身就是这个时代最重要的 harness 使用技能。</strong>
+  </div>
+</section>
+
+
+</main>
+<aside class="page-outline" aria-label="本章导读">
+  <div class="outline-title">本章导读</div>
+  <div class="outline-chapter" id="outline-chapter">如何使用本手册</div>
+  <nav id="section-outline" aria-label="本章小节"></nav>
+  <div class="outline-study">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-4-3-9-2V4c5-1 9 2 9 2s4-3 9-2v14c-5-1-9 2-9 2Zm0 0V6"/></svg>
+    <strong>读懂，也要记住</strong>
+    <p>每章读完，先凭记忆回答自测，再展开核对。</p>
+    <a id="chapter-selftest" href="#ch1">前往本章自测 <span aria-hidden="true">→</span></a>
+  </div>
+</aside>
+</div>
+
+<footer class="site-footer">
+  <div class="page-width">
+    <div><strong>Harness Agent</strong><span>从理解原理，到读懂源码。</span></div>
+    <p>读到卡壳的地方，随时回到 agent 会话提问。<a href="#top">返回封面 ↑</a></p>
+  </div>
+</footer>
+
+<button class="toc-backdrop" id="toc-backdrop" type="button" aria-label="关闭章节目录" tabindex="-1" hidden></button>
+
+<dialog class="search-dialog" id="search-dialog" aria-labelledby="search-label">
+  <div class="search-input-row">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+    <label class="sr-only" id="search-label" for="manual-search">搜索手册</label>
+    <input id="manual-search" type="search" placeholder="搜索章节、概念或代码…" autocomplete="off" spellcheck="false">
+    <button class="icon-button" id="search-close" type="button" aria-label="关闭搜索"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button>
+  </div>
+  <div class="search-status" id="search-status" role="status" aria-live="polite">输入关键词，查找手册中的内容</div>
+  <div class="search-results" id="search-results"></div>
+  <div class="search-help"><span><kbd>↑</kbd> <kbd>↓</kbd> 选择 <kbd>Enter</kbd> 跳转</span><span><kbd>Esc</kbd> 关闭</span></div>
+</dialog>
+<div class="sr-only" id="manual-announcement" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  var chapters = Array.from(document.querySelectorAll('section.chapter'));
+  var toc = document.getElementById('chapter-navigation');
+  var chapterLinks = Array.from(toc.querySelectorAll('a[href^="#ch"]'));
+  var outline = document.getElementById('section-outline');
+  var mobile = window.matchMedia('(max-width: 1023px)');
+  var announcement = document.getElementById('manual-announcement');
+  var searchRecords = [];
+  var icons = {
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/>',
+    bulb: '<path d="M9 18h6m-5 3h4M8.5 14.5a6 6 0 1 1 7 0L15 18H9Z"/>',
+    warning: '<path d="m12 3 10 17H2L12 3Zm0 6v5m0 3v.1"/>',
+    box: '<path d="m12 3 9 5v9l-9 5-9-5V8l9-5Zm0 10 9-5M3 8l9 5v9M7.5 5.5l9 5"/>',
+    code: '<path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 3l-4 18"/>',
+    copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    arrowRight: '<path d="M4 12h15m-6-6 6 6-6 6"/>',
+    arrowLeft: '<path d="M20 12H5m6-6-6 6 6 6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    tool: '<path d="M14 5a6 6 0 0 0-7 7l-5 5 5 5 5-5a6 6 0 0 0 7-7l-4 4-4-4 4-4Z"/>',
+    harness: '<path d="M5 4v16m14-16v16M5 12h14"/><circle cx="12" cy="12" r="3"/>'
+  };
+  function icon(name) {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + icons[name] + '</svg>';
+  }
+  function element(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  function cleanLabel(text) { return text.replace(/^[\s\p{Extended_Pictographic}\uFE0F]+/u, '').trim(); }
+  function chapterTitle(chapter) {
+    var heading = chapter.querySelector('h2').cloneNode(true);
+    heading.querySelector('.chapter-no').remove();
+    return heading.textContent.trim();
+  }
+  function navigate(id) {
+    var target = document.getElementById(id);
+    if (!target) return;
+    var detail = target.closest('details');
+    if (detail) detail.open = true;
+    if (location.hash === '#' + id) target.scrollIntoView();
+    else location.hash = id;
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+  }
+
+  // 先索引原始教材内容，避免把界面按钮写入搜索结果。
+  chapters.forEach(function (chapter) {
+    var current;
+    var h3Index = 0;
+    Array.from(chapter.children).forEach(function (child) {
+      if (child.matches('h2,h3')) {
+        if (!child.id) child.id = chapter.id + (child.matches('h2') ? '-title' : '-s' + (++h3Index));
+        current = { id: child.id, title: child.textContent.trim(), chapter: chapterTitle(chapter), body: '' };
+        searchRecords.push(current);
+      } else if (current) current.body += ' ' + child.textContent;
+    });
+    chapter.querySelectorAll('h3').forEach(function (heading) {
+      var anchor = element('a', 'heading-anchor', '#');
+      anchor.href = '#' + heading.id;
+      anchor.setAttribute('aria-label', '链接到' + heading.textContent);
+      heading.append(anchor);
+    });
+    var selftest = chapter.querySelector('details.selftest');
+    if (selftest) selftest.id = chapter.id + '-selftest';
+  });
+  document.querySelectorAll('.callout-title,.repo-box-title').forEach(function (title) {
+    var kind = title.matches('.repo-box-title') ? 'box' : title.closest('.warn') ? 'warning' : title.closest('.tip') ? 'bulb' : 'info';
+    var text = cleanLabel(title.textContent);
+    title.innerHTML = icon(kind);
+    title.append(document.createTextNode(text));
+  });
+  document.querySelectorAll('.chapter svg text').forEach(function (label) { label.textContent = cleanLabel(label.textContent); });
+  document.querySelectorAll('.msg .role').forEach(function (role) {
+    var text = role.textContent;
+    var kind = role.closest('.m-user') ? 'user' : role.closest('.m-tool') ? 'tool' : role.closest('.m-assistant') ? 'harness' : 'info';
+    role.innerHTML = icon(kind);
+    role.append(document.createTextNode(text));
+  });
+  document.querySelectorAll('.msg').forEach(function (message) {
+    var walker = document.createTreeWalker(message, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      if (!node.parentElement.closest('code,.role')) node.textContent = node.textContent.replace(/[🔧✅]\s*/gu, '');
+    }
+  });
+
+  // 所有代码内容保持原样。复制优先用剪贴板 API，并兼容本地文件。
+  function fallbackCopy(text) {
+    var active = document.activeElement;
+    var input = element('textarea', 'sr-only');
+    input.value = text;
+    input.setAttribute('readonly', '');
+    document.body.append(input);
+    input.select();
+    var success = document.execCommand('copy');
+    input.remove();
+    if (active) active.focus({ preventScroll: true });
+    if (!success) throw new Error('copy failed');
+  }
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var code = pre.querySelector('code');
+    var text = code ? code.textContent : pre.textContent;
+    if (code) {
+      var tokens = /\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:async|await|const|let|var|function|return|if|else|while|for|try|catch|throw|new|true|false|null|undefined|string|number|boolean)\b|\b\d+(?:\.\d+)?\b/g;
+      var cursor = 0, match;
+      code.replaceChildren();
+      while ((match = tokens.exec(text)) !== null) {
+        code.append(document.createTextNode(text.slice(cursor, match.index)));
+        var token = match[0];
+        var kind = token.startsWith('//') || token.startsWith('/*') ? 'comment' : /^["']/.test(token) ? 'string' : /^\d/.test(token) ? 'number' : 'keyword';
+        code.append(element('span', 'syntax-' + kind, token));
+        cursor = tokens.lastIndex;
+      }
+      code.append(document.createTextNode(text.slice(cursor)));
+    }
+    var wrap = element('div', 'code-block');
+    var toolbar = element('div', 'code-toolbar');
+    var label = element('span', 'code-label');
+    label.innerHTML = icon('code');
+    label.append(document.createTextNode(text.trim().startsWith('{') && text.includes('"') ? 'JSON' : /await|function|const |ToolDefinition/.test(text) ? 'TypeScript · 伪代码' : '代码与流程'));
+    var copy = element('button', 'copy-code');
+    copy.type = 'button';
+    copy.innerHTML = icon('copy') + '<span>复制代码</span>';
+    toolbar.append(label, copy);
+    pre.before(wrap);
+    wrap.append(toolbar, pre);
+    pre.tabIndex = 0;
+    pre.setAttribute('aria-label', '代码示例，可横向滚动');
+    copy.addEventListener('click', async function () {
+      copy.disabled = true;
+      try {
+        try {
+          if (!navigator.clipboard) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(text);
+        } catch (_) { fallbackCopy(text); }
+        copy.innerHTML = icon('check') + '<span>已复制</span>';
+        copy.classList.add('copied');
+        announcement.textContent = '代码已复制';
+      } catch (_) {
+        copy.innerHTML = icon('copy') + '<span>请选中代码复制</span>';
+        announcement.textContent = '无法访问剪贴板，请选中代码后复制';
+      }
+      copy.disabled = false;
+      window.setTimeout(function () {
+        copy.innerHTML = icon('copy') + '<span>复制代码</span>';
+        copy.classList.remove('copied');
+      }, 2000);
+    });
+  });
+  var scrollRegions = [];
+  document.querySelectorAll('table').forEach(function (table, index) {
+    var wrap = element('div', 'table-wrap');
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', '数据表格 ' + (index + 1) + '，可横向滚动');
+    table.before(wrap);
+    wrap.append(table);
+    scrollRegions.push(wrap);
+  });
+  document.querySelectorAll('.chapter figure > svg').forEach(function (svg) {
+    var wrap = element('div', 'figure-scroll');
+    var hint = element('div', 'figure-hint', '左右滑动查看完整示意图 ↔');
+    wrap.setAttribute('role', 'region');
+    wrap.setAttribute('aria-label', svg.getAttribute('aria-label') + '，可横向滚动');
+    svg.before(hint, wrap);
+    wrap.append(svg);
+    wrap._hint = hint;
+    scrollRegions.push(wrap);
+  });
+  chapters.forEach(function (chapter, index) {
+    var nav = element('nav', 'chapter-navigation');
+    nav.setAttribute('aria-label', '章节翻页');
+    function pageLink(target, next) {
+      var link = element('a', next ? 'next-chapter' : 'previous-chapter');
+      link.href = '#' + target.id;
+      var text = element('div');
+      text.append(element('span', '', next ? '下一章' : '上一章'), element('strong', '', chapterTitle(target)));
+      if (!next) link.innerHTML = icon('arrowLeft');
+      link.append(text);
+      if (next) link.insertAdjacentHTML('beforeend', icon('arrowRight'));
+      return link;
+    }
+    if (index > 0) nav.append(pageLink(chapters[index - 1], false));
+    if (index < chapters.length - 1) nav.append(pageLink(chapters[index + 1], true));
+    chapter.append(nav);
+  });
+
+  // 抽屉目录：焦点约束、背景隔离和返回焦点。
+  var menu = document.getElementById('toc-toggle');
+  var backdrop = document.getElementById('toc-backdrop');
+  var drawerOpen = false;
+  var drawerOverflow = '';
+  var background = Array.from(document.querySelectorAll('.site-header,main,.page-outline,.site-footer'));
+  function closeDrawer(restoreFocus) {
+    if (!drawerOpen) return;
+    drawerOpen = false;
+    toc.classList.remove('is-open');
+    toc.removeAttribute('role');
+    toc.removeAttribute('aria-modal');
+    if (mobile.matches) toc.setAttribute('aria-hidden', 'true');
+    menu.setAttribute('aria-expanded', 'false');
+    backdrop.hidden = true;
+    background.forEach(function (node) { node.inert = false; });
+    document.body.style.overflow = drawerOverflow;
+    if (restoreFocus) menu.focus({ preventScroll: true });
+  }
+  menu.addEventListener('click', function () {
+    if (drawerOpen) { closeDrawer(true); return; }
+    drawerOpen = true;
+    drawerOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    toc.classList.add('is-open');
+    toc.removeAttribute('aria-hidden');
+    toc.setAttribute('role', 'dialog');
+    toc.setAttribute('aria-modal', 'true');
+    menu.setAttribute('aria-expanded', 'true');
+    backdrop.hidden = false;
+    background.forEach(function (node) { node.inert = true; });
+    document.getElementById('toc-close').focus({ preventScroll: true });
+  });
+  document.getElementById('toc-close').addEventListener('click', function () { closeDrawer(true); });
+  backdrop.addEventListener('click', function () { closeDrawer(true); });
+  toc.addEventListener('click', function (event) {
+    var link = event.target.closest('a[href^="#"]');
+    if (link && drawerOpen) {
+      event.preventDefault();
+      closeDrawer(false);
+      navigate(link.hash.slice(1));
+    }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (!drawerOpen) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeDrawer(true); }
+    if (event.key === 'Tab') {
+      var focusable = Array.from(toc.querySelectorAll('a,button')).filter(function (node) { return node.getClientRects().length; });
+      var first = focusable[0], last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+  });
+  function syncDrawer() {
+    if (!mobile.matches) closeDrawer(false);
+    if (mobile.matches && !drawerOpen) toc.setAttribute('aria-hidden', 'true');
+    else toc.removeAttribute('aria-hidden');
+  }
+  mobile.addEventListener('change', syncDrawer);
+
+  // 阅读位置和右侧小节目录共用一次滚动调度。
+  var activeChapter = null;
+  var activeHeadingId = '';
+  var chapterPositions = [];
+  var headingPositions = [];
+  var scheduled = false;
+  var initialPosition;
+  try { initialPosition = localStorage.getItem('harness-reading-location'); } catch (_) { /* 无持久存储也能阅读。 */ }
+  var savedTarget = initialPosition && document.getElementById(initialPosition);
+  if (savedTarget && savedTarget.closest('.chapter')) {
+    var start = document.getElementById('start-reading');
+    start.href = '#' + savedTarget.id;
+    start.querySelector('span').textContent = '继续阅读';
+    start.title = '继续：' + chapterTitle(savedTarget.closest('.chapter'));
+  }
+  function refreshPositions() {
+    chapterPositions = chapters.map(function (chapter) { return { node: chapter, top: chapter.getBoundingClientRect().top + window.scrollY }; });
+    headingPositions = Array.from(document.querySelectorAll('.chapter h3')).map(function (heading) { return { node: heading, top: heading.getBoundingClientRect().top + window.scrollY }; });
+    scrollRegions.forEach(function (region) {
+      var overflows = region.scrollWidth > region.clientWidth + 1;
+      if (overflows) region.tabIndex = 0; else region.removeAttribute('tabindex');
+      if (region._hint) region._hint.hidden = !overflows;
+    });
+    queueReading();
+  }
+  function buildOutline(chapter) {
+    outline.replaceChildren();
+    document.getElementById('outline-chapter').textContent = chapterTitle(chapter);
+    chapter.querySelectorAll('h3').forEach(function (heading) {
+      var text = heading.firstChild.textContent.trim().replace(/^\d+\.\d+\s*/, '');
+      var link = element('a', '', text);
+      link.href = '#' + heading.id;
+      outline.append(link);
+    });
+    var test = chapter.querySelector('details.selftest');
+    var testLink = document.getElementById('chapter-selftest');
+    testLink.hidden = !test;
+    if (test) testLink.href = '#' + test.id;
+  }
+  document.getElementById('chapter-selftest').addEventListener('click', function (event) {
+    event.preventDefault();
+    var target = document.getElementById(this.hash.slice(1));
+    target.open = true;
+    navigate(target.id);
+  });
+  function updateReading() {
+    scheduled = false;
+    if (!chapterPositions.length) return;
+    var line = window.scrollY + parseFloat(getComputedStyle(root).getPropertyValue('--header-height')) + 50;
+    var current = chapterPositions[0].node;
+    chapterPositions.forEach(function (item) { if (item.top <= line) current = item.node; });
+    if (current !== activeChapter) {
+      activeChapter = current;
+      chapterLinks.forEach(function (link) {
+        var active = link.hash === '#' + current.id;
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current');
+      });
+      buildOutline(current);
+      if (!mobile.matches || drawerOpen) {
+        var activeLink = toc.querySelector('a.active');
+        if (activeLink) {
+          var bounds = activeLink.getBoundingClientRect(), navBounds = toc.getBoundingClientRect();
+          if (bounds.bottom > navBounds.bottom || bounds.top < navBounds.top) toc.scrollTop += bounds.top - navBounds.top - toc.clientHeight / 2;
+        }
+      }
+    }
+    var sectionHeadings = headingPositions.filter(function (item) { return item.node.closest('.chapter') === current; });
+    var heading = null;
+    sectionHeadings.forEach(function (item) { if (item.top <= line) heading = item.node; });
+    var readingId = heading ? heading.id : current.id;
+    outline.querySelectorAll('a').forEach(function (link) {
+      var active = heading && link.hash === '#' + heading.id;
+      link.classList.toggle('active', !!active);
+      if (active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current');
+    });
+    if (readingId !== activeHeadingId) {
+      activeHeadingId = readingId;
+      if (window.scrollY > document.getElementById('top').offsetHeight + 50) {
+        try { localStorage.setItem('harness-reading-location', readingId); } catch (_) { /* 持久化可选。 */ }
+      }
+    }
+    var extent = document.documentElement.scrollHeight - window.innerHeight;
+    var progress = extent > 0 ? Math.max(0, Math.min(1, window.scrollY / extent)) : 0;
+    var percentage = Math.round(progress * 100);
+    document.getElementById('reading-percentage').textContent = percentage + '%';
+    document.getElementById('reading-meter').setAttribute('aria-valuenow', String(percentage));
+    document.getElementById('reading-progress-fill').style.transform = 'scaleX(' + progress + ')';
+    document.getElementById('toc-progress-fill').style.transform = 'scaleX(' + progress + ')';
+  }
+  function queueReading() {
+    if (!scheduled) { scheduled = true; window.requestAnimationFrame(updateReading); }
+  }
+  window.addEventListener('scroll', queueReading, { passive: true });
+  window.addEventListener('resize', refreshPositions);
+  document.querySelectorAll('details').forEach(function (detail) { detail.addEventListener('toggle', refreshPositions); });
+  if (window.ResizeObserver) new ResizeObserver(refreshPositions).observe(document.querySelector('main'));
+  if (document.fonts) document.fonts.ready.then(refreshPositions);
+
+  // 搜索按小节定位；文字节点高亮避免将查询内容当成 HTML。
+  var dialog = document.getElementById('search-dialog');
+  var input = document.getElementById('manual-search');
+  var results = document.getElementById('search-results');
+  var status = document.getElementById('search-status');
+  var searchButton = document.getElementById('search-toggle');
+  var searchOverflow = '';
+  var searchLocked = false;
+  function closeSearch() {
+    if (!dialog.open) return;
+    document.body.style.overflow = searchOverflow;
+    searchLocked = false;
+    dialog.close();
+  }
+  function highlight(node, text, terms) {
+    var lower = text.toLowerCase(), cursor = 0;
+    while (cursor < text.length) {
+      var next = -1, matched = '';
+      terms.forEach(function (term) {
+        var index = lower.indexOf(term, cursor);
+        if (index !== -1 && (next === -1 || index < next)) { next = index; matched = term; }
+      });
+      if (next === -1) { node.append(document.createTextNode(text.slice(cursor))); break; }
+      node.append(document.createTextNode(text.slice(cursor, next)), element('mark', '', text.slice(next, next + matched.length)));
+      cursor = next + matched.length;
+    }
+  }
+  function renderSearch() {
+    results.replaceChildren();
+    var query = input.value.trim();
+    if (!query) {
+      status.textContent = '输入关键词，查找手册中的内容';
+      var suggestions = element('div', 'search-suggestions');
+      ['Agent Loop', '工具调用', '上下文', '权限', 'ZCode'].forEach(function (word) {
+        var button = element('button', '', word);
+        button.type = 'button';
+        button.addEventListener('click', function () { input.value = word; renderSearch(); input.focus(); });
+        suggestions.append(button);
+      });
+      results.append(suggestions);
+      return;
+    }
+    var terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    var matches = searchRecords.filter(function (record) {
+      var text = (record.title + ' ' + record.body).toLowerCase();
+      return terms.every(function (term) { return text.includes(term); });
+    }).sort(function (a, b) {
+      var score = function (record) { return terms.reduce(function (sum, term) { return sum + (record.title.toLowerCase().includes(term) ? 10 : 0); }, 0); };
+      return score(b) - score(a);
+    });
+    status.textContent = matches.length ? '找到 ' + matches.length + ' 处匹配' + (matches.length > 32 ? '，显示前 32 处' : '') : '没有找到“' + query + '”';
+    if (!matches.length) { results.append(element('p', 'search-empty', '试试更短的关键词，例如“循环”“工具”或“上下文”。')); return; }
+    matches.slice(0, 32).forEach(function (record) {
+      var link = element('a', 'search-result');
+      link.href = '#' + record.id;
+      link.append(element('span', '', record.chapter));
+      var title = element('strong');
+      highlight(title, record.title, terms);
+      var body = record.body.replace(/\s+/g, ' ').trim();
+      var match = body.toLowerCase().indexOf(terms[0]);
+      var start = Math.max(0, match - 30);
+      var snippet = (start ? '…' : '') + body.slice(start, start + 115) + (body.length > start + 115 ? '…' : '');
+      var excerpt = element('p');
+      highlight(excerpt, snippet, terms);
+      link.append(title, excerpt);
+      link.addEventListener('click', function (event) { event.preventDefault(); closeSearch(); navigate(record.id); });
+      results.append(link);
+    });
+    results.scrollTop = 0;
+  }
+  function openSearch() {
+    if (dialog.open) { input.focus(); return; }
+    closeDrawer(false);
+    searchOverflow = document.body.style.overflow;
+    searchLocked = true;
+    document.body.style.overflow = 'hidden';
+    renderSearch();
+    dialog.showModal();
+    input.focus();
+    input.select();
+  }
+  searchButton.addEventListener('click', openSearch);
+  searchButton.setAttribute('aria-keyshortcuts', 'Control+K Meta+K');
+  if (/Mac|iPhone|iPad/.test(navigator.platform)) searchButton.querySelector('kbd').textContent = '⌘ K';
+  document.getElementById('search-close').addEventListener('click', closeSearch);
+  dialog.addEventListener('cancel', function (event) { event.preventDefault(); closeSearch(); });
+  dialog.addEventListener('close', function () {
+    if (!dialog.open && searchLocked) {
+      document.body.style.overflow = searchOverflow;
+      searchLocked = false;
+    }
+  });
+  dialog.addEventListener('click', function (event) {
+    var box = dialog.getBoundingClientRect();
+    if (event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) closeSearch();
+  });
+  input.addEventListener('input', renderSearch);
+  dialog.addEventListener('keydown', function (event) {
+    if (event.isComposing) return;
+    if (event.key === 'Escape') { event.preventDefault(); closeSearch(); return; }
+    var links = Array.from(results.querySelectorAll('a'));
+    var index = links.indexOf(document.activeElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!links.length) return;
+      var next = event.key === 'ArrowDown' ? Math.min(index + 1, links.length - 1) : index - 1;
+      links.forEach(function (link) { link.classList.remove('selected'); });
+      if (next < 0) input.focus();
+      else { links[next].classList.add('selected'); links[next].focus(); }
+    } else if (event.key === 'Enter' && document.activeElement === input && links.length) {
+      event.preventDefault(); links[0].click();
+    }
+  });
+  document.addEventListener('keydown', function (event) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openSearch(); }
+  });
+  var printState;
+  window.addEventListener('beforeprint', function () {
+    closeSearch();
+    closeDrawer(false);
+    printState = Array.from(document.querySelectorAll('details')).map(function (detail) { return { node: detail, open: detail.open }; });
+    printState.forEach(function (item) { item.node.open = true; });
+  });
+  window.addEventListener('afterprint', function () { if (printState) printState.forEach(function (item) { item.node.open = item.open; }); });
+  root.classList.add('js');
+  syncDrawer();
+  refreshPositions();
+  // 新生成的小节锚点也能在直接打开分享链接时定位。
+  if (location.hash) {
+    var target = document.getElementById(location.hash.slice(1));
+    if (target) {
+      var detail = target.closest('details');
+      if (detail) detail.open = true;
+      window.requestAnimationFrame(function () { target.scrollIntoView({ behavior: 'instant' }); });
+    }
+  }
+})();
+
+</script>
+</body>
+</html>
