@@ -494,7 +494,7 @@ html:not(.js) #theme-toggle, html:not(.js) .page-outline { display: none; }
   <p>本手册是一份<strong>系统教材</strong>，不是速查卡。它按「先概念、后源码」双线组织：</p>
   <ul>
     <li><strong>第 1–8 章：概念线</strong>。用简化伪代码和示意图讲清 Harness Agent 的六大子系统，不需要任何前置知识。</li>
-    <li><strong>第 9–10 章：源码线</strong>。带你走进 <code>D:\GitHub\ZCode</code> 与 <code>D:\GitHub\Deepseek-Harness</code> 两个真实仓库，看每个概念落在哪些文件里。</li>
+    <li><strong>第 9–10 章：源码线</strong>。带你走进 <strong>ZCode</strong> 与 <strong>Deepseek-Harness</strong> 两个真实仓库，看每个概念落在哪些文件里（手册中的仓库路径均为<strong>仓库内相对路径</strong>，克隆到本地任意位置都能对照）。</li>
     <li><strong>第 11–12 章：术语表与路线图</strong>。随时查阅，并规划后续课程。</li>
   </ul>
   <h3>阅读建议</h3>
@@ -601,8 +601,8 @@ html:not(.js) #theme-toggle, html:not(.js) .page-outline { display: none; }
   <h3>1.4 两个参考仓库在地图上的位置</h3>
   <p>本手册的概念将对照两个本地仓库落地（走读见第 9、10 章）：</p>
   <ul>
-    <li><strong>ZCode</strong>（<code>D:\GitHub\ZCode</code>）：AI 编程工作台，桌面 / Web / 终端三种形态；Agent 运行时本体在 <code>apps/zcode-cli/</code>，采用 contracts → core → adapters → bootstrap 四层架构（第 9 章走读）。</li>
-    <li><strong>Deepseek-Harness</strong>（<code>D:\GitHub\Deepseek-Harness</code>）：DeepSeek 官方开源的通用 harness（命令名 <code>dsh</code>），「一切皆插件」的 Cordis 架构，运行时核心在 <code>packages/core/</code>（第 10 章走读）。</li>
+    <li><strong>ZCode</strong>：AI 编程工作台，桌面 / Web / 终端三种形态；Agent 运行时本体在仓库的 <code>apps/zcode-cli/</code>，采用 contracts → core → adapters → bootstrap 四层架构（第 9 章走读）。</li>
+    <li><strong>Deepseek-Harness</strong>：DeepSeek 官方开源的通用 harness（命令名 <code>dsh</code>，<code>github.com/deepseek-ai/deepseek-harness</code>），「一切皆插件」的 Cordis 架构，运行时核心在 <code>packages/core/</code>（第 10 章走读）。</li>
   </ul>
   <p>你现在不需要看懂它们——只需要知道：<strong>它们不是模型，而是围绕模型造的两台「车」</strong>。本手册前 8 章教你造车原理，后 2 章带你看这两台车的发动机舱。</p>
 
@@ -1020,7 +1020,7 @@ effectiveWindow = contextWindow        // 默认 200K
   <ul>
     <li><strong>易变内容放尾部</strong>：日期、git 状态这类每回合都变的信息若放在头部，每轮都打碎缓存；</li>
     <li><strong>缓存锚点要设对位置</strong>：ZCode 特意在 provider 消息投影<strong>之后</strong>才统一设置缓存锚点（<code>runtime/helpers/provider-request-messages.ts</code>），防止合成消息抢占锚点位置；</li>
-    <li><strong>没有显式缓存 API 也能吃到缓存</strong>：Deepseek-Harness 就没有调用任何 prompt-caching API，而是靠结构设计——系统提示在历史内演进（<code>systemPromptUpdate: 'in-history'</code>）、请求序列由稳定日志投影推导，从形态上保住前缀稳定。</li>
+    <li><strong>没有显式缓存 API 也能吃到缓存</strong>：Deepseek-Harness 就没有调用任何 prompt-caching API，而是靠结构设计——系统提示在历史内演进（<code>systemPromptUpdate: 'in-history'</code>）、请求序列由稳定日志投影推导，从形态上保住前缀稳定；连压缩摘要都作为对话尾部的 user 消息发出、复用原对话的 system prompt 与工具表——压缩这次辅助调用本身也在吃前缀缓存（<code>compaction-basic/summarizer.ts</code>，见 10.7 节实文）。</li>
   </ul>
 
   <h3>5.5 上下文工程守则</h3>
@@ -1120,7 +1120,7 @@ effectiveWindow = contextWindow        // 默认 200K
 
   <h3>延伸阅读</h3>
   <ul>
-    <li>首选：本地文件 <code>D:\GitHub\Deepseek-Harness\SAFETY.md</code>（官方安全定位自述：实验性、未经审计、沙箱不保证隔离——先读它再谈安全）</li>
+    <li>首选：Deepseek-Harness 仓库根目录的 <code>SAFETY.md</code>（官方安全定位自述：实验性、未经审计、沙箱不保证隔离——先读它再谈安全）</li>
   </ul>
 </section>
 
@@ -1398,7 +1398,7 @@ const report = await subagent({
   <p class="lead">DeepSeek 官方开源的通用 harness（命令名 <code>dsh</code>，MIT 协议，developer preview）。它的口号「everything is a plugin」不是修辞——连 Agent Loop 自己都是插件。与 ZCode 的「分层架构」对照着读，你会看到同一些概念的两种完全不同的架构表达。</p>
 
   <h3>10.1 它是什么：Web 优先，多端并存</h3>
-  <p>启动方式：<code>npx @deepseek-ai/dsh web</code>，在 <code>http://127.0.0.1:3080</code> 起本地 Web UI。<strong>没有传统 TUI</strong>；无人值守场景用 <code>--profile headless</code>（NDJSON 事件流输出）；还有 Python SDK（<code>python/</code>，把 dsh 当子进程驱动）与 ACP 协议入口。四个目录先认清：</p>
+  <p>启动方式：<code>npx @deepseek-ai/dsh web</code>，在 <code>http://127.0.0.1:3080</code> 起本地 Web UI。<strong>没有传统 TUI</strong>；无人值守场景用 <code>--profile headless</code>（NDJSON 事件流输出）；还有 Python SDK（<code>python/</code>，把 dsh 当子进程驱动）与 ACP 协议入口。五个目录先认清：</p>
   <table>
     <thead><tr><th>目录</th><th>是什么</th></tr></thead>
     <tbody>
@@ -1415,7 +1415,7 @@ const report = await subagent({
   </div>
 
   <h3>10.2 Cordis：一切皆插件</h3>
-  <p>Cordis 是一个带依赖注入的插件框架。在 dsh 里，agent loop、工具注册表、模型适配器、会话日志<strong>全部以插件（Service）形式存在</strong>，通过 <code>ctx</code>（上下文）互相发现。启动时按 <strong>profile 组合</strong>装配：默认组合是声明式插件表 <code>packages/bundle/base/cordis.patch.yml</code>（约 100 行），再按 <code>web-app / headless / sdk-app / acp-app</code> 等 profile 叠加覆盖。base 里能看到许多默认值：默认模型 <code>deepseek-flash</code>、权限模式 <code>workspace-write</code>、工具结果裁剪阈值、Windows 用 pwsh 沙箱其他平台用 bash 沙箱……<strong>想理解 dsh 的出厂行为，读这一个文件就够了</strong>。</p>
+  <p>Cordis 是一个带依赖注入的插件框架。在 dsh 里，agent loop、工具注册表、模型适配器、会话日志<strong>全部以插件（Service）形式存在</strong>，通过 <code>ctx</code>（上下文）互相发现。启动时按 <strong>profile 组合</strong>装配：默认组合是声明式插件表 <code>packages/bundle/base/cordis.patch.yml</code>（数百行），再按 <code>web-app / headless / sdk-app / acp-app</code> 等 profile 叠加覆盖。base 里能看到许多默认值：默认模型 <code>deepseek-flash</code>、权限模式 <code>workspace-write</code>、工具结果裁剪阈值、Windows 用 pwsh 沙箱其他平台用 bash 沙箱……<strong>想理解 dsh 的出厂行为，读这一个文件就够了</strong>。</p>
 
   <h3>10.3 Agent Loop 的落地：状态机 + 日志投影</h3>
   <p>核心实现在 <code>packages/core/agent-loop/src/agent.ts</code>——<code>ReactLoopAgent</code>，一台三相状态机（idle / maintenance / running）。术语对照：<strong>step = 一次模型请求 + 它触发的工具调用；turn = 若干 step</strong>。与第 3 章伪代码的映射：</p>
@@ -1456,6 +1456,7 @@ const report = await subagent({
     <li><strong>保序并行</strong>：并发安全的工具进有界滚动池（<code>maxParallelToolCalls</code>），但<strong>结果按模型给出的顺序提交</strong>——并行的速度、串行的确定性，两个都要；</li>
     <li><strong>PTC 模式</strong>（独门）：开启后<strong>全部工具坍缩成一个 <code>run_code</code></strong>——系统提示按目标语言生成 SDK 说明，模型直接写代码调 SDK，harness 进程内解释执行。用代码的表达力替换 N 个窄工具，市面上少见路线。</li>
   </ul>
+  <p>规模感：<code>docs/tool-catalog.md</code> 由生成器真实启动每个插件、读 <code>ctx.tools.schemas()</code> 产出，收录 <strong>72 个工具 schema / 68 个唯一名称</strong>（含实验性与平台变体；standard Web preset 只暴露其中子集，且 Windows 下禁 <code>bash</code> 用 <code>pwsh</code>）。</p>
 
   <h3>10.5 权限与沙箱：矩阵式配置</h3>
   <ul>
@@ -1473,10 +1474,58 @@ const report = await subagent({
     <li>提示缓存：无显式 API，靠结构设计吃缓存（第 5.4 节案例出处）。</li>
   </ul>
 
-  <h3>10.7 子智能体：连别家 agent 都能打工</h3>
-  <p><code>packages/subagent/</code> + 契约 <code>docs/subsystems/subagent.md</code>。<code>SubagentProvider</code> 接口声明能力（工具过滤、输出 schema、深度上限、人格、是否继承父上下文）。provider 分两类：<strong>进程内</strong>（<code>subagent</code> 全新派生 / <code>subagent_fork</code> 保留父模型复用 KV Cache）与<strong>外部</strong>——claude-code、codex、acp、dsh-sdk。<strong>dsh 可以把 Claude Code 与 Codex 当作受控子智能体驱动</strong>：harness 之间不是竞争关系，是组合关系。</p>
+  <p>槽位与锚点讲的是「怎么拼」——拼出来的文字到底长什么样？下一节直接看实文。</p>
 
-  <h3>10.8 扩展机制：插件即宪法</h3>
+  <!-- ======== 新增：Prompt 实文（dsh） ======== -->
+  <h3>10.7 Prompt 实文：dsh 到底对模型说了什么</h3>
+  <p>第 5.1 节说系统提示词是一条流水线——现在看 dsh 这条流水线真正吐出的文字。下面每段摘录都注明源码出处。读的时候留意两个反复出现的设计意图：<strong>把安全规则写成可执行的行为指令</strong>，<strong>把状态变化写成可对账的消息</strong>。</p>
+
+  <h4>身份段：两句话立住人格</h4>
+  <pre><code>// 固定身份（packages/core/system-prompt/src/index.ts，槽位 HARNESS_IDENTITY(-1000)）
+"You are an AI agent powered by DeepSeek Harness."
+
+// 部署 persona（standard Web preset 叠加，{{model}} 运行时严格插值）
+"You are a coding agent powered by the {{model}} model."</code></pre>
+  <p>固定身份只有一句，产品人格交给部署层叠加——这正是 5.1 节「分层拼装」的实文印证：身份几乎不变（缓存友好），人格随部署变。</p>
+
+  <h4>Plan mode 段：把流程协议写进提示词</h4>
+  <blockquote>"You are in plan mode. … Imperative language to implement changes means <strong>plan</strong> the implementation, not execute it. A user's conversational agreement … approves nothing and does not end plan mode."（packages/bundle/base/cordis.patch.yml）</blockquote>
+  <ul>
+    <li>探索只用非变更手段（non-mutating reads / searches / static analysis）；</li>
+    <li>计划必须 decision-complete：目标、成功标准、按子系统分组的改动清单；</li>
+    <li><code>exit_plan_mode</code> 是唯一且最后的工具调用，计划交人审批。</li>
+  </ul>
+  <p>注意它防的两个坑：模型把「用户随口说好啊」当成批准；在计划阶段就把「应该修改 X」直接动手执行。</p>
+
+  <h4>技能目录段：渐进披露的实文</h4>
+  <pre><code>// packages/skill/tool-skill/src/index.ts，以 system-reminder 包裹注入
+"A skill is a reusable set of task-specific instructions…"
+&lt;available_skills&gt;（技能名 + 一句话描述的名录）&lt;/available_skills&gt;
+"This catalog contains summaries only; do not infer or follow a skill's
+ instructions until it has been loaded."</code></pre>
+  <p>第 8.3 节讲的「清单常驻、正文按需加载」在这里落地成三句话：目录只给摘要、匹配就调 <code>skill</code> 工具加载、<strong>没加载之前不许凭想象执行</strong>。</p>
+
+  <h4>压缩指令：连压缩都在吃缓存</h4>
+  <pre><code>// packages/compaction/compaction-basic/src/summarizer.ts
+"You are now acting as a compaction engine for this AI coding assistant.
+ Condense the conversation ABOVE into a structured checkpoint…"
+// 且要求输出固定段落：Primary Request and Intent / Key Technical
+// Concepts / Files and Code / Errors and Fixes …</code></pre>
+  <p>两个可偷师的细节：摘要格式被<strong>结构性规定</strong>（固定段落标题，压缩结果可预期、关键信息不漏）；压缩指令作为<strong>最后一条 user 消息</strong>发出、复用原对话的 system prompt 与工具表——压缩这次辅助调用成为上一请求的真前缀，KV 缓存照吃不误（第 5.4 节案例的出处就在这里）。</p>
+
+  <h4>工具描述里的安全规则：描述即护栏</h4>
+  <blockquote>bash 工具描述节选（docs/tool-catalog.md）："Before any delete or move, verify that the resolved absolute target path is the intended one… An unset variable expands to an empty string, so guard variables in such paths with <code>${VAR:?}</code>. … a blocked file operation is reported as [sandbox: file access denied] — a policy denial: do not retry another way."</blockquote>
+  <p>第 4.4 节说「工具描述就是提示词」——dsh 在描述里写明了防误删守卫、空变量陷阱、以及「沙箱拒绝是策略性的，不许换路子绕」。另一例是 <code>run_code</code> 的那句 "Only what you print or return is program output — curate it."（只有你打印或返回的才算产出——管好你的输出）。</p>
+
+  <h4>子代理委托段：权限边界写进人格</h4>
+  <blockquote>"You are a delegated subagent: your permission scope was fixed when you were started and cannot be widened from inside this session — operations that require approval are rejected automatically. … state the limitation in your reply."（packages/subagent/subagent/src/child-agent.ts）</blockquote>
+  <p>子代理的权限范围在启动时冻结、会话内不可扩大、被拒就如实向父代理报告——第 7 章的「人格定制」与第 6 章的 fail-closed，在一句 prompt 里合流。</p>
+
+  <h3>10.8 子智能体：连别家 agent 都能打工</h3>
+  <p><code>packages/subagent/</code> + 契约 <code>docs/subsystems/subagent.md</code>。<code>SubagentProvider</code> 接口声明能力（工具过滤、输出 schema、深度上限、人格、是否继承父上下文）。provider 分两类：<strong>进程内</strong>（<code>subagent</code> 全新派生 / <code>subagent_fork</code> 保留父模型复用 KV Cache）与<strong>外部</strong>——claude-code、codex、acp、dsh-sdk。<strong>dsh 可以把 Claude Code 与 Codex 当作受控子智能体驱动</strong>：harness 之间不是竞争关系，是组合关系。进程内子代理还配有 <code>send_message</code> / <code>interrupt_agent</code> / <code>list_agents</code> 三个管理工具——可以持续对话，而非一次性派活。</p>
+  <p>编排工具箱再往上有三层，正好对上第 7.3 节的三种形态：<strong>workflow</strong>——模型写 JS 脚本扇出子代理，宿主只提供 <code>agent() / pipeline() / parallel() / phase()</code> 编排原语，不给文件系统与网络 API（<code>packages/workflow/tool-workflow/</code>）；实验性 <strong>Agent Teams</strong>——持久队友 + 带乐观锁的 CAS 任务板 + <code>wait_agent</code> 事件等待；以及 <strong>goal 自动续跑</strong>家族——<code>create_goal</code> 持久目标 + round-driver 自动开新轮、<code>schedule</code> 定时唤醒原会话、<code>jobs</code> 后台作业、<code>ralph</code> 每轮换全新子代理的固定循环。长任务不再占着主对话不放。</p>
+
+  <h3>10.9 扩展机制：插件即宪法</h3>
   <ul>
     <li>原生扩展就是写 Cordis 插件；更激进的是 <strong>runtime-authored 插件</strong>（<code>packages/extensions/</code>）：模型/浏览器创作的插件可在运行期挂载执行；</li>
     <li>MCP：用官方 SDK，<strong>按服务器逐个显式 opt-in</strong>（安全优先）；不支持 prompt templates / elicitation / subscriptions；</li>
@@ -1484,10 +1533,10 @@ const report = await subagent({
     <li>Hooks：<strong>核心没有</strong> Claude-Code 式 hooks 框架，等价能力由 Cordis 事件瀑布承担，另有两个实验性兼容桥（<code>packages/experimental/hooks-claude-code/</code>、<code>hooks-codex/</code>）。</li>
   </ul>
 
-  <h3>10.9 持久化：JSONL 世代迁移</h3>
+  <h3>10.10 持久化：JSONL 世代迁移</h3>
   <p>会话事件日志以 JSONL 落盘（可选 Zstd 压缩，<code>docs/subsystems/persistence.md</code>），<strong>格式分 generation，相邻版本配迁移包</strong>（v0→v4 迁移链）。单写者持有 <code>SessionHandle</code>，写后批量 flush。崩溃恢复靠日志连续性 + agent-loop 的 <code>interruptedTurnClosers</code>（补写缺失收尾、合成 interrupted 回合终结）。</p>
 
-  <h3>10.10 五个值得偷师的设计</h3>
+  <h3>10.11 五个值得偷师的设计</h3>
   <ol>
     <li>一切皆插件 + vendor 治理留痕（架构即依赖图，改动即审计记录）；</li>
     <li>请求从事件日志投影推导（崩溃恢复、回放、可审计压缩白送）；</li>
@@ -1496,7 +1545,7 @@ const report = await subagent({
     <li>PTC 模式（把工具调用升维成写代码）。</li>
   </ol>
 
-  <h3>10.11 推荐读码路线（一个下午的量）</h3>
+  <h3>10.12 推荐读码路线（一个下午的量）</h3>
   <ol>
     <li><code>README.zh.md</code> + <code>docs/architecture.md</code> —— 定位与「Plugins, not loop changes」约定（30 分钟）；</li>
     <li><code>packages/bundle/base/cordis.patch.yml</code> —— 出厂默认值一览（20 分钟，性价比最高）；</li>
@@ -1515,6 +1564,8 @@ const report = await subagent({
         <p class="a">render 给模型看的精简内容 与 present 给人看的 UI 呈现——同一份数据，两个受众。</p>
         <p class="q">Q3：dsh 与 ZCode 在 hooks 与沙箱上的投入为何如此不同？说说你的推断。</p>
         <p class="a">开放题。可从产品形态推：dsh 定位通用宿主框架（要开放第三方插件与外部 provider，隔离必须重），ZCode 定位工作台（权限门控优先）；架构上 dsh 有 Cordis 事件瀑布可复用，ZCode 需要独立 hooks 协议对接生态（还兼容 Claude Code 布局）。言之有据即可。</p>
+        <p class="q">Q4：dsh 的压缩指令为什么要作为「最后一条 user 消息」发出，而不是单独开一个新会话去总结？</p>
+        <p class="a">复用原对话的 system prompt 与工具表，使压缩这次辅助调用成为上一请求的真前缀——KV 缓存命中，省钱省时。单独开会话则什么缓存都吃不到。</p>
       </div>
     </details>
   </div>
@@ -1585,7 +1636,7 @@ const report = await subagent({
     <tbody>
       <tr><td>今天</td><td>合上手册，把第 2.3 节消息流图和第 3.3 节伪代码默画一遍</td></tr>
       <tr><td>三天后</td><td>打乱章节顺序重做全部自测（检索练习 + 交错练习）</td></tr>
-      <tr><td>一周后</td><td>做 9.11 / 10.11 的读码路线，边读边对照手册找概念</td></tr>
+      <tr><td>一周后</td><td>做 9.11 / 10.12 的读码路线，边读边对照手册找概念</td></tr>
       <tr><td>随时</td><td>向 agent 提问：「用 dsh 的代码给我讲一遍 tool_result 配对」</td></tr>
     </tbody>
   </table>
@@ -1617,7 +1668,7 @@ const report = await subagent({
     <li><a href="https://www.latent.space/p/attention-interface">Latent Space · The Evolution of the Agent Harness</a> —— 学科演化</li>
     <li><a href="https://www.latent.space/p/harness-eng">Latent Space · Extreme Harness Engineering</a> —— 进阶实战</li>
     <li><a href="https://modelcontextprotocol.io">MCP 官方文档</a> —— 扩展生态权威</li>
-    <li>本地：<code>D:\GitHub\ZCode</code>、<code>D:\GitHub\Deepseek-Harness</code> —— 一切概念的落地现场</li>
+    <li>本地克隆：ZCode 与 Deepseek-Harness 两个仓库 —— 一切概念的落地现场（Deepseek-Harness 开源于 <code>github.com/deepseek-ai/deepseek-harness</code>；手册内路径均为仓库内相对路径，与克隆位置无关）</li>
   </ul>
 
   <div class="callout tip">
